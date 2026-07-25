@@ -4,12 +4,17 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
   RefreshControl,
+  StyleSheet,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronRight as ArrowRight,
+} from "lucide-react-native";
+import { useRouter } from "expo-router";
 import { api } from "@/lib/axios";
 import { Spinner } from "@/components/ui/Spinner";
 import { Alert } from "@/components/ui/Alert";
@@ -33,7 +38,9 @@ const LIMIT = 8;
 
 export default function WeeklyScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [page, setPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["sales", "summary", "weekly", "paginated", page],
@@ -45,7 +52,7 @@ export default function WeeklyScreen() {
     },
     placeholderData: (prev) => prev,
   });
-  const [refreshing, setRefreshing] = useState(false);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await refetch();
@@ -87,7 +94,7 @@ export default function WeeklyScreen() {
             <Text style={styles.heroSub}>
               {meta
                 ? `${meta.totalItems} week${meta.totalItems !== 1 ? "s" : ""} on record`
-                : "Loading..."}
+                : ""}
             </Text>
           </View>
 
@@ -95,27 +102,37 @@ export default function WeeklyScreen() {
           {rows.map((w) => {
             const settled = w.due <= 0;
             return (
-              <View key={w.weekKey} style={styles.card}>
+              <TouchableOpacity
+                key={w.weekKey}
+                style={styles.card}
+                onPress={() =>
+                  router.push(`/(app)/sales/entries/${w.weekKey}` as any)
+                }
+                activeOpacity={0.7}
+              >
                 {/* Card header */}
                 <View style={styles.cardHeader}>
                   <View>
                     <Text style={styles.cardWeekLabel}>{w.label}</Text>
                     <Text style={styles.cardWeekKey}>{w.weekKey}</Text>
                   </View>
-                  <View
-                    style={[
-                      styles.badge,
-                      settled ? styles.badgeGreen : styles.badgeRed,
-                    ]}
-                  >
-                    <Text
+                  <View style={styles.cardHeaderRight}>
+                    <View
                       style={[
-                        styles.badgeText,
-                        settled ? styles.badgeTextGreen : styles.badgeTextRed,
+                        styles.badge,
+                        settled ? styles.badgeGreen : styles.badgeRed,
                       ]}
                     >
-                      {settled ? "Settled" : `Due ${fmt(w.due)}`}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.badgeText,
+                          settled ? styles.badgeTextGreen : styles.badgeTextRed,
+                        ]}
+                      >
+                        {settled ? "Settled" : `Due ${fmt(w.due)}`}
+                      </Text>
+                    </View>
+                    <ArrowRight size={16} color={colors.gray[400]} />
                   </View>
                 </View>
 
@@ -155,7 +172,7 @@ export default function WeeklyScreen() {
                     </View>
                   ))}
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })}
 
@@ -267,6 +284,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[100],
   },
+  cardHeaderRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   cardWeekLabel: { fontSize: 13, fontWeight: "700", color: colors.gray[900] },
   cardWeekKey: { fontSize: 11, color: colors.gray[400], marginTop: 2 },
   badge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },

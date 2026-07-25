@@ -50,7 +50,15 @@ export default function MonthlyScreen() {
     },
     placeholderData: (prev) => prev,
   });
-
+  // Add this helper near the top with other helpers
+  const fmtMonth = (m: string) => {
+    const [year, month] = m.split("-");
+    const name = new Date(Number(year), Number(month) - 1).toLocaleString(
+      "en-US",
+      { month: "long" },
+    );
+    return { name, key: m }; // e.g. { name: "July", key: "2026-07" }
+  };
   const rows = data?.data ?? [];
   const meta = data?.meta;
   const totalPages = meta?.totalPages ?? 1;
@@ -96,7 +104,15 @@ export default function MonthlyScreen() {
             return (
               <View key={m.month} style={styles.card}>
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardMonth}>{m.month}</Text>
+                  {(() => {
+                    const { name, key } = fmtMonth(m.month);
+                    return (
+                      <View style={styles.cardMonthWrap}>
+                        <Text style={styles.cardMonthName}>{name}</Text>
+                        <Text style={styles.cardMonthKey}>{key}</Text>
+                      </View>
+                    );
+                  })()}
                   <View
                     style={[
                       styles.badge,
@@ -292,4 +308,7 @@ const styles = StyleSheet.create({
   pageBtnDisabled: { color: colors.gray[300] },
   pageIndicator: { fontSize: 13, color: colors.gray[400] },
   pageNum: { fontWeight: "800", color: colors.gray[900] },
+  cardMonthWrap: { gap: 1 },
+  cardMonthName: { fontSize: 14, fontWeight: "800", color: colors.gray[900] },
+  cardMonthKey: { fontSize: 11, color: colors.gray[400] },
 });

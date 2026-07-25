@@ -92,6 +92,7 @@ export default function DashboardScreen() {
     queryKey: ["dashboard"],
     queryFn: async () => {
       const res = await api.get<ApiResponse<DashboardData>>("/sales/dashboard");
+      console.log("Dashboard data:", res.data.data);
       return res.data.data!;
     },
   });
@@ -209,17 +210,19 @@ export default function DashboardScreen() {
             })()}
           </Card>
 
-          {/* Long-term */}
-          <Card title="Long-term Performance">
-            <MetricRow label="Month Sales" value={fmt(data?.month.sales)} />
+          <Card title="This Month">
+            <MetricRow label="Sales" value={fmt(data?.month.sales)} />
             <MetricRow
-              label="Month Profit"
+              label="Profit (30%)"
               value={fmt(data?.month.profit)}
               valueStyle={{ color: colors.indigo[600] }}
             />
-            <MetricRow label="All-time Sales" value={fmt(data?.total.sales)} />
+          </Card>
+
+          <Card title="All Time">
+            <MetricRow label="Total Sales" value={fmt(data?.total.sales)} />
             <MetricRow
-              label="All-time Profit"
+              label="Total Profit"
               value={fmt(data?.total.profit)}
               valueStyle={{ color: colors.indigo[600] }}
             />

@@ -2,15 +2,13 @@ import React, { useEffect } from "react";
 import { Stack } from "expo-router";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/auth.store";
-import { getAccessToken } from "@/lib/axios";
+import { getAccessToken, api } from "@/lib/axios";
 import NetInfo from "@react-native-community/netinfo";
-import { flushQueue } from "@/lib/offline-queue";
-import { api } from "@/lib/axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+import { flushQueue } from "@/lib/offline-queue";
 
 const persister = createAsyncStoragePersister({
   storage: AsyncStorage,
@@ -20,8 +18,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 1000 * 60 * 5, // 5 min — serve cache without refetch
-      gcTime: 1000 * 60 * 60 * 24, // 24h — keep in MMKV storage
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 60 * 24,
     },
   },
 });
@@ -35,6 +33,7 @@ export default function RootLayout() {
       setLoading(false);
     });
   }, []);
+
   useEffect(() => {
     const unsub = NetInfo.addEventListener((state) => {
       if (state.isConnected) {
@@ -46,6 +45,7 @@ export default function RootLayout() {
     });
     return unsub;
   }, []);
+
   return (
     <PersistQueryClientProvider
       client={queryClient}
