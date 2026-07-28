@@ -1,26 +1,44 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-// ── Set your API base URL here ──────────────────────────────────────────────
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.0.104:3000/api/v1';
-// ───────────────────────────────────────────────────────────────────────────
-console.log('API_BASE_URL:', API_BASE_URL);
+
 const TOKEN_KEY = 'access_token';
 const REFRESH_KEY = 'refresh_token';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15_000,
+  timeout: 30_000,
 });
 
+// ── Request: attach token ──────────────────────────────────────────────────
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-  console.log('→ requesting:', config.method?.toUpperCase(), config.baseURL + config.url);
   const token = await SecureStore.getItemAsync(TOKEN_KEY);
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
+// ── Response 1: cold-start retry ───────────────────────────────────────────
+api.interceptors.response.use(
+  (res) => res,
+  async (err: AxiosError) => {
+    const config = err.config as InternalAxiosRequestConfig & { __retryCount?: number };
+
+    const isColdStart = !err.response || [502, 503, 504].includes(err.response.status ?? 0);
+    const retryCount = config.__retryCount ?? 0;
+
+    if (isColdStart && retryCount < 3 && config) {
+      config.__retryCount = retryCount + 1;
+      await new Promise((r) => setTimeout(r, config.__retryCount! * 2000));
+      return api(config);
+    }
+
+    return Promise.reject(err);
+  },
+);
+
+// ── Response 2: 401 refresh flow ───────────────────────────────────────────
 let refreshing: Promise<string> | null = null;
 
 api.interceptors.response.use(
@@ -34,7 +52,6 @@ api.interceptors.response.use(
 
       if (!refreshToken) {
         await clearTokens();
-        // Navigation handled by auth store listener
         return Promise.reject(err);
       }
 
