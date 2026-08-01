@@ -19,15 +19,7 @@
         "foregroundImage": "./assets/skinO-foreground.png",
         "backgroundColor": "#4F46E5"
       },
-      "package": "com.skino.app",
-      "shrinkResources": true,
-      "enableProguardInReleaseBuilds": true,
-      "splits": {
-        "abi": {
-          "enable": true,
-          "universalApk": false
-        }
-      }
+      "package": "com.skino.app"
     },
     "plugins": ["expo-router", "expo-secure-store"],
     "extra": {
