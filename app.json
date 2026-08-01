@@ -5,10 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "skino",
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.skino.app",
@@ -22,12 +19,17 @@
         "foregroundImage": "./assets/skinO-foreground.png",
         "backgroundColor": "#4F46E5"
       },
-      "package": "com.skino.app"
+      "package": "com.skino.app",
+      "shrinkResources": true,
+      "enableProguardInReleaseBuilds": true,
+      "splits": {
+        "abi": {
+          "enable": true,
+          "universalApk": false
+        }
+      }
     },
-    "plugins": [
-      "expo-router",
-      "expo-secure-store"
-    ],
+    "plugins": ["expo-router", "expo-secure-store"],
     "extra": {
       "router": {},
       "eas": {
