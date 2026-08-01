@@ -9,11 +9,7 @@ import {
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronRight as ArrowRight,
-} from "lucide-react-native";
+import Feather from "@expo/vector-icons/Feather";
 import { useRouter } from "expo-router";
 import { api } from "@/lib/axios";
 import { Spinner } from "@/components/ui/Spinner";
@@ -132,7 +128,11 @@ export default function WeeklyScreen() {
                         {settled ? "Settled" : `Due ${fmt(w.due)}`}
                       </Text>
                     </View>
-                    <ArrowRight size={16} color={colors.gray[400]} />
+                    <Feather
+                      name="arrow-right"
+                      size={16}
+                      color={colors.gray[400]}
+                    />
                   </View>
                 </View>
 
@@ -185,7 +185,8 @@ export default function WeeklyScreen() {
                 disabled={page === 1}
                 activeOpacity={0.7}
               >
-                <ChevronLeft
+                <Feather
+                  name="chevron-left"
                   size={16}
                   color={page === 1 ? colors.gray[300] : colors.gray[500]}
                 />
@@ -219,7 +220,8 @@ export default function WeeklyScreen() {
                 >
                   Next
                 </Text>
-                <ChevronRight
+                <Feather
+                  name="chevron-right"
                   size={16}
                   color={
                     page === totalPages ? colors.gray[300] : colors.gray[500]

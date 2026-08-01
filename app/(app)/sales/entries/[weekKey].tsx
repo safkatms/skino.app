@@ -13,13 +13,12 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, Pencil, Trash2, X, Check } from "lucide-react-native";
 import { api } from "@/lib/axios";
 import { Spinner } from "@/components/ui/Spinner";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { colors } from "@/components/ui/theme";
-
+import Feather from "@expo/vector-icons/Feather";
 interface SalesEntry {
   id: number;
   type: "SALE" | "PAYMENT" | "RETURN";
@@ -87,7 +86,7 @@ function EditModal({
               hitSlop={8}
               style={modal.closeBtn}
             >
-              <X size={18} color={colors.gray[500]} />
+              <Feather name="x" size={18} color={colors.gray[500]} />
             </TouchableOpacity>
           </View>
 
@@ -122,7 +121,7 @@ function EditModal({
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <>
-                  <Check size={15} color="#fff" />
+                  <Feather name="check" size={15} color="#fff" />
                   <Text style={modal.saveText}>Save Changes</Text>
                 </>
               )}
@@ -204,7 +203,7 @@ export default function WeekEntriesScreen() {
           hitSlop={8}
           style={styles.backBtn}
         >
-          <ArrowLeft size={20} color={colors.gray[700]} />
+          <Feather name="arrow-left" size={20} color={colors.gray[700]} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>{weekKey}</Text>
@@ -283,7 +282,11 @@ export default function WeekEntriesScreen() {
                           hitSlop={8}
                           style={styles.actionBtn}
                         >
-                          <Pencil size={14} color={colors.gray[400]} />
+                          <Feather
+                            name="edit"
+                            size={14}
+                            color={colors.gray[400]}
+                          />
                           <Text style={styles.actionLabel}>Edit</Text>
                         </TouchableOpacity>
                         <View style={styles.actionDivider} />
@@ -303,7 +306,11 @@ export default function WeekEntriesScreen() {
                             />
                           ) : (
                             <>
-                              <Trash2 size={14} color={colors.red[400]} />
+                              <Feather
+                                name="trash-2"
+                                size={14}
+                                color={colors.red[400]}
+                              />
                               <Text style={styles.actionLabelDanger}>
                                 Delete
                               </Text>

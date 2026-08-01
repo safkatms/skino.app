@@ -24,23 +24,33 @@ export async function clearQueue() {
     await AsyncStorage.removeItem(QUEUE_KEY);
 }
 
+// offline-queue.ts
+
+let isFlushing = false;
+
 export async function flushQueue(api: any, onFlushed: () => void) {
+    if (isFlushing) return;
+
     const state = await NetInfo.fetch();
     if (!state.isConnected) return;
 
     const queue = await getQueue();
     if (!queue.length) return;
 
-    for (const entry of queue) {
-        try {
-            if (entry.type === 'sale') await api.post('/sales/sale', { amount: entry.amount });
-            else if (entry.type === 'payment') await api.post('/sales/payment', { amount: entry.amount, weekKey: entry.weekKey });
-            else await api.post('/sales/return', { amount: entry.amount, weekKey: entry.weekKey });
-        } catch {
-            return;
+    isFlushing = true;
+    try {
+        for (const entry of queue) {
+            try {
+                if (entry.type === 'sale') await api.post('/sales/sale', { amount: entry.amount });
+                else if (entry.type === 'payment') await api.post('/sales/payment', { amount: entry.amount, weekKey: entry.weekKey });
+                else await api.post('/sales/return', { amount: entry.amount, weekKey: entry.weekKey });
+            } catch {
+                return; // stop on first failure, queue stays intact
+            }
         }
+        await clearQueue();
+        onFlushed();
+    } finally {
+        isFlushing = false;
     }
-
-    await clearQueue();
-    onFlushed();
 }

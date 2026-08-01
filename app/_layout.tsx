@@ -9,6 +9,8 @@ import { getAccessToken, api } from "@/lib/axios";
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { flushQueue } from "@/lib/offline-queue";
+import { useNetInfo } from "@react-native-community/netinfo";
+import { View, Text } from "react-native";
 
 const persister = createAsyncStoragePersister({
   storage: AsyncStorage,
@@ -20,12 +22,14 @@ const queryClient = new QueryClient({
       retry: 1,
       staleTime: 1000 * 60 * 5,
       gcTime: 1000 * 60 * 60 * 24,
+      networkMode: "offlineFirst",
     },
   },
 });
 
 export default function RootLayout() {
   const { setAuthenticated, setLoading } = useAuthStore();
+  const netInfo = useNetInfo();
 
   useEffect(() => {
     getAccessToken().then((token) => {
@@ -35,14 +39,19 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    let wasConnected: boolean | null = null;
+
     const unsub = NetInfo.addEventListener((state) => {
-      if (state.isConnected) {
+      const isNowConnected = !!state.isConnected;
+      if (isNowConnected && wasConnected === false) {
         flushQueue(api, () => {
           queryClient.invalidateQueries({ queryKey: ["dashboard"] });
           queryClient.invalidateQueries({ queryKey: ["sales"] });
         });
       }
+      wasConnected = isNowConnected;
     });
+
     return unsub;
   }, []);
 
@@ -52,6 +61,19 @@ export default function RootLayout() {
       persistOptions={{ persister }}
     >
       <SafeAreaProvider>
+        {!netInfo.isConnected && (
+          <View
+            style={{
+              backgroundColor: "#f59e0b",
+              padding: 8,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
+              You're offline — showing cached data
+            </Text>
+          </View>
+        )}
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(app)" />

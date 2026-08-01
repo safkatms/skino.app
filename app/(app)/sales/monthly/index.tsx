@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import Feather from "@expo/vector-icons/Feather";
 import { api } from "@/lib/axios";
 import { Spinner } from "@/components/ui/Spinner";
 import { Alert } from "@/components/ui/Alert";
@@ -177,10 +177,7 @@ export default function MonthlyScreen() {
                 disabled={page === 1}
                 activeOpacity={0.7}
               >
-                <ChevronLeft
-                  size={16}
-                  color={page === 1 ? colors.gray[300] : colors.gray[500]}
-                />
+                <Feather name="chevron-left" size={16} color={page === 1 ? colors.gray[300] : colors.gray[500]} />
                 <Text
                   style={[
                     styles.pageBtnText,
@@ -209,9 +206,7 @@ export default function MonthlyScreen() {
                 >
                   Next
                 </Text>
-                <ChevronRight
-                  size={16}
-                  color={
+                <Feather name="chevron-right" size={16} color={
                     page === totalPages ? colors.gray[300] : colors.gray[500]
                   }
                 />

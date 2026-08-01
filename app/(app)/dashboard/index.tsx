@@ -11,7 +11,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { LogOut } from "lucide-react-native";
 import { api } from "@/lib/axios";
 import { logout } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth.store";
@@ -20,7 +19,7 @@ import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { colors } from "@/components/ui/theme";
 import type { ApiResponse } from "@/types/api";
-
+import Feather from "@expo/vector-icons/Feather";
 interface Metrics {
   sales: number;
   profit: number;
@@ -118,7 +117,7 @@ export default function DashboardScreen() {
           resizeMode="contain"
         />
         <TouchableOpacity onPress={handleLogout} hitSlop={8}>
-          <LogOut size={20} color={colors.gray[500]} />
+          <Feather name="log-out" size={20} color={colors.gray[500]} />
         </TouchableOpacity>
       </View>
 

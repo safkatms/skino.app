@@ -19,7 +19,7 @@
     "android": {
       "icon": "./assets/skinO.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/skinO.png",
+        "foregroundImage": "./assets/skinO-foreground.png",
         "backgroundColor": "#4F46E5"
       },
       "package": "com.skino.app"
