@@ -9,6 +9,8 @@ import {
   RefreshControl,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -69,7 +71,10 @@ function EditModal({
 
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose}>
-      <View style={modal.overlay}>
+      <KeyboardAvoidingView
+        style={modal.overlay}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
         <View style={modal.sheet}>
           {/* Sheet handle */}
           <View style={modal.handle} />
@@ -99,7 +104,7 @@ function EditModal({
               onChangeText={setValue}
               keyboardType="decimal-pad"
               autoFocus
-              placeholderTextColor={colors.gray[300]}
+              placeholderTextColor={colors.gray[400]}
             />
           </View>
 
@@ -128,7 +133,7 @@ function EditModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -309,7 +314,7 @@ export default function WeekEntriesScreen() {
                               <Feather
                                 name="trash-2"
                                 size={14}
-                                color={colors.red[400]}
+                                color={colors.red[500]}
                               />
                               <Text style={styles.actionLabelDanger}>
                                 Delete
@@ -428,7 +433,7 @@ const styles = StyleSheet.create({
   actionLabelDanger: {
     fontSize: 12,
     fontWeight: "600",
-    color: colors.red[400],
+    color: colors.red[500],
   },
   actionDivider: {
     width: 1,
