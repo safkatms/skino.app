@@ -211,7 +211,9 @@ export default function MonthlyScreen() {
                           cleared ? styles.badgeTextGreen : styles.badgeTextRed,
                         ]}
                       >
-                        {cleared ? "Cleared" : `Due ${fmt(m.due)}`}
+                        {cleared
+                          ? `Cleared: ${fmt(Math.abs(m.due))}`
+                          : `Due ${fmt(m.due)}`}
                       </Text>
                     </View>
                     {/* <Feather

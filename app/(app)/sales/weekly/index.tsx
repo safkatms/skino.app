@@ -237,7 +237,9 @@ export default function WeeklyScreen() {
                           settled ? styles.badgeTextGreen : styles.badgeTextRed,
                         ]}
                       >
-                        {settled ? "Settled" : `Due ${fmt(w.due)}`}
+                        {settled
+                          ? `Settled: ${fmt(Math.abs(w.due))}`
+                          : `Due ${fmt(w.due)}`}
                       </Text>
                     </View>
                     <Feather

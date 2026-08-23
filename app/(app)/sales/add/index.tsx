@@ -99,7 +99,7 @@ export default function AddSalesScreen() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const { data: weekKeys = [] } = useWeeks();
-
+  const lastWeekKey = weekKeys[1] ?? weekKeys[0] ?? "";
   const activeColor =
     tab === "sale"
       ? colors.indigo[600]
@@ -156,7 +156,7 @@ export default function AddSalesScreen() {
     setErrorMsg("");
     setSuccessMsg("");
     const state = await NetInfo.fetch();
-    const wk = weekKey || undefined;
+    const wk = weekKey || lastWeekKey;
     if (!state.isConnected) {
       await enqueue({ type: tab, amount: amt, weekKey: wk });
       setSuccessMsg("✓ Saved offline — will sync when connected.");
@@ -292,7 +292,7 @@ export default function AddSalesScreen() {
               <WeekPicker
                 label="Target Week"
                 weekKeys={weekKeys}
-                value={weekKey}
+                value={weekKey || lastWeekKey}
                 onChange={setWeekKey}
               />
             )}
