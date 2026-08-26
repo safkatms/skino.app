@@ -147,8 +147,16 @@ export default function AddSalesScreen() {
     onError: (e) => setErrorMsg(getApiErrorMessage(e)),
   });
 
+  const evalAmount = (expr: string): number => {
+    const parts = expr
+      .split("+")
+      .map((p) => parseFloat(p.trim()))
+      .filter((n) => !isNaN(n));
+    return parts.reduce((a, b) => a + b, 0);
+  };
+
   const handleSubmit = async () => {
-    const amt = parseFloat(amount);
+    const amt = evalAmount(amount);
     if (!amt || amt <= 0) {
       setErrorMsg("Enter a valid amount");
       return;
@@ -285,8 +293,23 @@ export default function AddSalesScreen() {
                 value={amount}
                 onChangeText={setAmount}
               />
+              {tab === "sale" && (
+                <TouchableOpacity
+                  style={styles.plusBtn}
+                  onPress={() => setAmount((prev) => prev + "+")}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.plusBtnText}>+</Text>
+                </TouchableOpacity>
+              )}
             </View>
-
+            {tab === "sale" &&
+              amount.includes("+") &&
+              evalAmount(amount) > 0 && (
+                <Text style={styles.exprTotal}>
+                  = ৳ {evalAmount(amount).toLocaleString("en-BD")}
+                </Text>
+              )}
             {/* Week picker (payment / return only) */}
             {(tab === "payment" || tab === "return") && (
               <WeekPicker
@@ -483,5 +506,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
+  },
+  exprTotal: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.indigo[600],
+    textAlign: "right",
+    marginTop: -8,
+  },
+  plusBtn: {
+    width: 44,
+    height: 52,
+    alignItems: "center",
+    justifyContent: "center",
+    borderLeftWidth: 1,
+    borderLeftColor: colors.indigo[100],
+    backgroundColor: "#FAFAFE",
+  },
+  plusBtnText: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: colors.indigo[600],
   },
 });
