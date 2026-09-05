@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -19,8 +19,9 @@ import { Spinner } from "@/components/ui/Spinner";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { colors } from "@/components/ui/theme";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import Feather from "@expo/vector-icons/Feather";
+import { WeeklySummary } from "../sales/weekly";
 
 interface Metrics {
   sales: number;
@@ -110,6 +111,199 @@ function Card({
   );
 }
 
+function WeeklyChart({ weeks }: { weeks: WeeklySummary[] }) {
+  const maxValue = useMemo(
+    () => Math.max(...weeks.map((w) => w.sales), 1),
+    [weeks],
+  );
+  const [selected, setSelected] = React.useState<WeeklySummary | null>(null);
+  const highestWeek = useMemo(
+    () => weeks.reduce((a, b) => (b.sales > a.sales ? b : a), weeks[0]),
+    [weeks],
+  );
+  const currentWeek = weeks[weeks.length - 1];
+  return (
+    <View style={styles.chartCard}>
+      <View style={styles.chartHeader}>
+        <View>
+          <Text style={styles.chartTitle}>Weekly trend</Text>
+          <Text style={styles.chartSubtitle}>
+            {weeks.length} weeks · sales &amp; profit
+          </Text>
+        </View>
+        <View style={styles.chartLegend}>
+          <View style={styles.legendItem}>
+            <View
+              style={[
+                styles.legendDot,
+                { backgroundColor: colors.indigo[400] },
+              ]}
+            />
+            <Text style={styles.legendText}>Sales</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View
+              style={[styles.legendDot, { backgroundColor: colors.green[500] }]}
+            />
+            <Text style={styles.legendText}>Profit</Text>
+          </View>
+        </View>
+      </View>
+      <View style={styles.weekCompareRow}>
+        <TouchableOpacity
+          style={[styles.weekCompareCard, { borderColor: colors.indigo[100] }]}
+          onPress={() =>
+            setSelected((s) =>
+              s?.weekKey === currentWeek.weekKey ? null : currentWeek,
+            )
+          }
+          activeOpacity={0.8}
+        >
+          <View style={styles.weekCompareTop}>
+            <View
+              style={[
+                styles.weekCompareDot,
+                { backgroundColor: colors.indigo[400] },
+              ]}
+            />
+            <Text style={styles.weekCompareLabel}>Current</Text>
+          </View>
+          <Text style={styles.weekCompareValue}>{fmt(currentWeek.sales)}</Text>
+          <Text style={styles.weekCompareSub}>
+            {currentWeek.label.replace(/_/g, " ")}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.weekCompareCard, { borderColor: colors.amber[200] }]}
+          onPress={() =>
+            setSelected((s) =>
+              s?.weekKey === highestWeek.weekKey ? null : highestWeek,
+            )
+          }
+          activeOpacity={0.8}
+        >
+          <View style={styles.weekCompareTop}>
+            <View
+              style={[
+                styles.weekCompareDot,
+                { backgroundColor: colors.amber[400] },
+              ]}
+            />
+            <Text style={styles.weekCompareLabel}>All-time high</Text>
+          </View>
+          <Text style={styles.weekCompareValue}>{fmt(highestWeek.sales)}</Text>
+          <Text style={styles.weekCompareSub}>
+            {highestWeek.label.replace(/_/g, " ")}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      {selected && (
+        <View style={styles.tooltip}>
+          <Text style={styles.tooltipTitle}>
+            {selected.label.replace(/_/g, " ")}
+          </Text>
+          <View style={styles.tooltipRow}>
+            <View
+              style={[
+                styles.legendDot,
+                { backgroundColor: colors.indigo[400] },
+              ]}
+            />
+            <Text style={styles.tooltipText}>Sales</Text>
+            <Text style={styles.tooltipValue}>{fmt(selected.sales)}</Text>
+          </View>
+          <View style={styles.tooltipRow}>
+            <View
+              style={[styles.legendDot, { backgroundColor: colors.green[500] }]}
+            />
+            <Text style={styles.tooltipText}>Profit</Text>
+            <Text style={styles.tooltipValue}>{fmt(selected.profit)}</Text>
+          </View>
+        </View>
+      )}
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chartScroll}
+      >
+        <View style={{ width: weeks.length * 44 }}>
+          <View
+            style={{
+              height: 160,
+              flexDirection: "row",
+              alignItems: "flex-end",
+              gap: 6,
+              paddingHorizontal: 4,
+            }}
+          >
+            {weeks.map((w) => {
+              const salesH = Math.max((w.sales / maxValue) * 150, 4);
+              const profitH = Math.max((w.profit / maxValue) * 150, 4);
+              const isSelected = selected?.weekKey === w.weekKey;
+              return (
+                <TouchableOpacity
+                  key={w.weekKey}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    setSelected((s) => (s?.weekKey === w.weekKey ? null : w))
+                  }
+                  style={{
+                    width: 28,
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    height: 160,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "flex-end",
+                      gap: 2,
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.bar,
+                        {
+                          height: salesH,
+                          backgroundColor: isSelected
+                            ? colors.green[600]
+                            : colors.green[400],
+                        },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.bar,
+                        {
+                          height: profitH,
+                          backgroundColor: isSelected
+                            ? colors.indigo[700]
+                            : colors.indigo[500],
+                        },
+                      ]}
+                    />
+                  </View>
+                  <View style={styles.chartMonthWrap}>
+                    <Text style={styles.chartMonth}>
+                      {w.label.split("_")[0].slice(0, 3)}
+                    </Text>
+                    <Text style={styles.chartMonth}>
+                      {w.label.split("_")[1]?.replace("Week-", "W")}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -120,6 +314,16 @@ export default function DashboardScreen() {
     queryFn: async () => {
       const res = await api.get<ApiResponse<DashboardData>>("/sales/dashboard");
       return res.data.data!;
+    },
+  });
+
+  const { data: weeklyChartData } = useQuery({
+    queryKey: ["sales", "summary", "weekly", "chart"],
+    queryFn: async () => {
+      const res = await api.get<ApiResponse<WeeklySummary[]>>(
+        "/sales/summary/weekly",
+      );
+      return [...(res.data.data ?? [])].reverse();
     },
   });
 
@@ -336,6 +540,11 @@ export default function DashboardScreen() {
               valueStyle={{ color: colors.indigo[600] }}
             />
           </Card>
+          {weeklyChartData && weeklyChartData.length > 0 && (
+            <View style={styles.section}>
+              <WeeklyChart weeks={weeklyChartData} />
+            </View>
+          )}
         </ScrollView>
       )}
     </View>
@@ -497,4 +706,136 @@ const styles = StyleSheet.create({
   duePillLabelRed: { color: colors.red[500] },
   duePillLabelGreen: { color: colors.green[600] },
   duePillValue: { fontSize: 15, fontWeight: "800" },
+  // Chart
+  section: { marginTop: 0 },
+  chartCard: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.gray[100],
+    overflow: "hidden",
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  chartHeader: {
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 4,
+  },
+  chartTitle: { fontSize: 13, fontWeight: "800", color: colors.gray[900] },
+  chartSubtitle: { fontSize: 11, color: colors.gray[400], marginTop: 2 },
+  chartLegend: { flexDirection: "row", gap: 12 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+  legendDot: { width: 8, height: 8, borderRadius: 2 },
+  legendText: { fontSize: 10, color: colors.gray[500], fontWeight: "600" },
+  chartScroll: { paddingHorizontal: 16, paddingTop: 12 },
+  chartArea: { height: 195, position: "relative" },
+  chartGrid: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 4,
+    height: 150,
+    justifyContent: "space-between",
+  },
+  chartGridLine: { height: 1, backgroundColor: colors.gray[100] },
+  barsContainer: {
+    height: 190,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-around",
+    paddingHorizontal: 5,
+  },
+  chartColumn: {
+    width: 42,
+    height: 190,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  barGroup: {
+    height: 154,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+  },
+  bar: {
+    width: 11,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    minHeight: 4,
+  },
+  incomeBar: { backgroundColor: colors.indigo[400] },
+  chartMonth: {
+    fontSize: 9,
+    fontWeight: "600",
+    color: colors.gray[400],
+    marginTop: 7,
+  },
+  chartMonthWrap: { alignItems: "center", marginTop: 7, gap: 1 },
+  tooltip: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    backgroundColor: colors.gray[50],
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.gray[100],
+    padding: 12,
+    gap: 6,
+  },
+  tooltipTitle: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: colors.gray[700],
+    marginBottom: 2,
+  },
+  tooltipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  tooltipText: { fontSize: 12, color: colors.gray[500], flex: 1 },
+  tooltipValue: { fontSize: 12, fontWeight: "800", color: colors.gray[900] },
+  weekCompareRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  weekCompareCard: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: colors.gray[50],
+    padding: 10,
+    gap: 3,
+  },
+  weekCompareTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  weekCompareDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 2,
+  },
+  weekCompareLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: colors.gray[400],
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  weekCompareValue: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: colors.gray[900],
+  },
+  weekCompareSub: {
+    fontSize: 10,
+    color: colors.gray[400],
+  },
 });

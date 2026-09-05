@@ -22,7 +22,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { colors } from "@/components/ui/theme";
 import type { PaginatedResponse } from "@/types/api";
 
-interface WeeklySummary {
+export interface WeeklySummary {
   weekKey: string;
   label: string;
   sales: number;
