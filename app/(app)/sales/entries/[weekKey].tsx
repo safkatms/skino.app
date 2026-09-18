@@ -147,6 +147,7 @@ export default function WeekEntriesScreen() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [activeTab, setActiveTab] = useState<"daily" | "entries">("daily");
 
   const {
     data: entries,
@@ -162,7 +163,15 @@ export default function WeekEntriesScreen() {
       return res.data.data;
     },
   });
-
+  const { data: dailySales } = useQuery({
+    queryKey: ["sales", "daily", weekKey],
+    queryFn: async () => {
+      const res = await api.get<{
+        data: { date: string; sales: number; profit: number }[];
+      }>(`/sales/entries/daily?weekKey=${weekKey}`);
+      return res.data.data;
+    },
+  });
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["sales", "entries", weekKey] });
     queryClient.invalidateQueries({ queryKey: ["sales", "summary", "weekly"] });
@@ -237,9 +246,81 @@ export default function WeekEntriesScreen() {
             />
           }
         >
+          {/* Tab switcher */}
+          <View style={styles.tabBar}>
+            <TouchableOpacity
+              style={[
+                styles.tabItem,
+                activeTab === "daily" && styles.tabItemActive,
+              ]}
+              onPress={() => setActiveTab("daily")}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.tabLabel,
+                  activeTab === "daily" && styles.tabLabelActive,
+                ]}
+              >
+                Daily Breakdown
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.tabItem,
+                activeTab === "entries" && styles.tabItemActive,
+              ]}
+              onPress={() => setActiveTab("entries")}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.tabLabel,
+                  activeTab === "entries" && styles.tabLabelActive,
+                ]}
+              >
+                Entries
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {errorMsg ? <Alert message={errorMsg} /> : null}
 
-          {!entries?.length ? (
+          {activeTab === "daily" ? (
+            dailySales && dailySales.length > 0 ? (
+              <View style={styles.dailySection}>
+                <Text style={styles.sectionTitle}>Daily Breakdown</Text>
+                {dailySales.map((d) => (
+                  <View key={d.date} style={styles.dailyRow}>
+                    <Text style={styles.dailyDate}>
+                      {new Date(d.date + "T00:00:00Z").toLocaleDateString(
+                        "en-US",
+                        {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        },
+                      )}
+                    </Text>
+                    <View style={styles.dailyRight}>
+                      <Text style={styles.dailySales}>{fmt(d.sales)}</Text>
+                      <Text style={styles.dailyProfit}>
+                        +{fmt(d.profit)} profit
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyIcon}>📊</Text>
+                <Text style={styles.emptyTitle}>No sales this week</Text>
+                <Text style={styles.emptyBody}>
+                  Daily sales breakdown will appear here.
+                </Text>
+              </View>
+            )
+          ) : !entries?.length ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>📭</Text>
               <Text style={styles.emptyTitle}>No entries yet</Text>
@@ -252,16 +333,12 @@ export default function WeekEntriesScreen() {
               const accent = TYPE_COLOR[entry.type];
               const bg = TYPE_BG[entry.type];
               const isDeleting = deletingId === entry.id;
-
               return (
                 <View key={entry.id} style={styles.entryCard}>
-                  {/* Left accent strip */}
                   <View
                     style={[styles.accentStrip, { backgroundColor: accent }]}
                   />
-
                   <View style={styles.entryInner}>
-                    {/* Top row: pill + amount */}
                     <View style={styles.entryTop}>
                       <View style={[styles.typePill, { backgroundColor: bg }]}>
                         <Text style={[styles.typePillText, { color: accent }]}>
@@ -272,8 +349,6 @@ export default function WeekEntriesScreen() {
                         {fmt(entry.amount)}
                       </Text>
                     </View>
-
-                    {/* Bottom row: date + actions */}
                     <View style={styles.entryBottom}>
                       <Text style={styles.entryDate}>
                         {fmtDate(entry.entryDate)}
@@ -439,6 +514,59 @@ const styles = StyleSheet.create({
     width: 1,
     height: 12,
     backgroundColor: colors.gray[200],
+  },
+  dailySection: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.gray[100],
+    padding: 16,
+    gap: 2,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.gray[400],
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  dailyRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[50],
+  },
+  dailyDate: { fontSize: 13, color: colors.gray[700], fontWeight: "600" },
+  dailyRight: { alignItems: "flex-end", gap: 2 },
+  dailySales: { fontSize: 13, fontWeight: "800", color: colors.gray[900] },
+  dailyProfit: { fontSize: 11, color: colors.green[600], fontWeight: "600" },
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.gray[100],
+    padding: 4,
+  },
+  tabItem: {
+    flex: 1,
+    paddingVertical: 9,
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  tabItemActive: {
+    backgroundColor: colors.indigo[600],
+  },
+  tabLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.gray[400],
+  },
+  tabLabelActive: {
+    color: "#fff",
   },
 });
 
