@@ -24,6 +24,7 @@ interface MonthlySummary {
   profit: number;
   payments: number;
   returned: number;
+  marketing: number;
   due: number;
 }
 
@@ -177,6 +178,15 @@ export default function MonthlyScreen() {
                 icon: "rotate-ccw",
                 iconBg: "#FFF7ED",
                 iconColor: colors.orange[500],
+              },
+              // NEW
+              {
+                label: "Marketing",
+                value: fmt(m.marketing),
+                color: "#A855F7",
+                icon: "radio",
+                iconBg: "#FDF4FF",
+                iconColor: "#A855F7",
               },
             ];
 

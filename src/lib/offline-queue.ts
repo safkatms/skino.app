@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const QUEUE_KEY = 'offline_queue';
 
 type QueuedEntry = {
-    type: 'sale' | 'payment' | 'return';
+    type: 'sale' | 'payment' | 'return' | 'marketing';
     amount: number;
     weekKey?: string;
     timestamp: number;

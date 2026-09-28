@@ -43,16 +43,19 @@ const TYPE_COLOR: Record<string, string> = {
   SALE: colors.indigo[600],
   PAYMENT: colors.green[600],
   RETURN: colors.orange[500],
+  MARKETING: "#A855F7",
 };
 const TYPE_BG: Record<string, string> = {
   SALE: colors.indigo[50],
   PAYMENT: colors.green[50],
   RETURN: "#FFF7ED",
+  MARKETING: "#F5F3FF",
 };
 const TYPE_LABEL: Record<string, string> = {
   SALE: "Sale",
   PAYMENT: "Payment",
   RETURN: "Return",
+  MARKETING: "Marketing",
 };
 
 function EditModal({
@@ -325,7 +328,8 @@ export default function WeekEntriesScreen() {
               <Text style={styles.emptyIcon}>📭</Text>
               <Text style={styles.emptyTitle}>No entries yet</Text>
               <Text style={styles.emptyBody}>
-                Sales, payments, and returns for this week will appear here.
+                Sales, payments, returns and marketing activities for this week
+                will appear here.
               </Text>
             </View>
           ) : (

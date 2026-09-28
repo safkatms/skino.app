@@ -26,6 +26,8 @@ import { WeeklySummary } from "../sales/weekly";
 interface Metrics {
   sales: number;
   profit: number;
+  marketing: number;
+  netProfit: number;
 }
 interface LastWeekMetrics extends Metrics {
   payments: number;
@@ -220,6 +222,23 @@ function WeeklyChart({ weeks }: { weeks: WeeklySummary[] }) {
             <Text style={styles.tooltipText}>Profit</Text>
             <Text style={styles.tooltipValue}>{fmt(selected.profit)}</Text>
           </View>
+          {/* NEW */}
+          <View style={styles.tooltipRow}>
+            <View style={[styles.legendDot, { backgroundColor: "#A855F7" }]} />
+            <Text style={styles.tooltipText}>Marketing</Text>
+            <Text style={[styles.tooltipValue, { color: "#A855F7" }]}>
+              {fmt(selected.marketing)}
+            </Text>
+          </View>
+          <View style={styles.tooltipRow}>
+            <View
+              style={[styles.legendDot, { backgroundColor: colors.green[600] }]}
+            />
+            <Text style={styles.tooltipText}>Net Profit</Text>
+            <Text style={[styles.tooltipValue, { color: colors.green[600] }]}>
+              {fmt(+(selected.profit - selected.marketing).toFixed(2))}
+            </Text>
+          </View>
         </View>
       )}
 
@@ -403,7 +422,14 @@ export default function DashboardScreen() {
 
             <View style={styles.heroDivider} />
 
-            {/* Today stats */}
+            <View style={styles.heroGrid}>
+              <HeroStat label="Marketing" value={fmt(data?.week.marketing)} />
+              <View style={styles.heroGridDivider} />
+              <HeroStat label="Net Profit" value={fmt(data?.week.netProfit)} />
+            </View>
+
+            <View style={styles.heroDivider} />
+
             <View style={styles.heroGrid}>
               <HeroStat label="Today Sales" value={fmt(data?.today.sales)} />
               <View style={styles.heroGridDivider} />
@@ -414,10 +440,10 @@ export default function DashboardScreen() {
           {/* Last Week */}
           <Card title={`Last Week · ${data?.lastWeekKey ?? ""}`}>
             <MetricRow
-              icon="bar-chart-2"
-              iconBg="#EEF2FF"
-              iconColor={colors.indigo[500]}
-              label="Gross Sales"
+              icon="trending-up"
+              iconBg="#ECFDF5"
+              iconColor={colors.green[500]}
+              label="Sales"
               value={fmt(data?.lastWeek.sales)}
             />
             <MetricRow
@@ -443,6 +469,15 @@ export default function DashboardScreen() {
               label="Returned"
               value={fmt(data?.lastWeek.returned)}
               valueStyle={{ color: colors.orange[500] }}
+            />
+            {/* NEW */}
+            <MetricRow
+              icon="radio"
+              iconBg="#FDF4FF"
+              iconColor="#A855F7"
+              label="Marketing"
+              value={fmt(data?.lastWeek.marketing)}
+              valueStyle={{ color: "#A855F7" }}
             />
 
             {/* Due pill */}
@@ -503,7 +538,6 @@ export default function DashboardScreen() {
             })()}
           </Card>
 
-          {/* This Month */}
           <Card title="This Month">
             <MetricRow
               icon="trending-up"
@@ -519,6 +553,22 @@ export default function DashboardScreen() {
               label="Profit (30%)"
               value={fmt(data?.month.profit)}
               valueStyle={{ color: colors.indigo[600] }}
+            />
+            <MetricRow
+              icon="radio"
+              iconBg="#FDF4FF"
+              iconColor="#A855F7"
+              label="Marketing"
+              value={fmt(data?.month.marketing)}
+              valueStyle={{ color: "#A855F7" }}
+            />
+            <MetricRow
+              icon="star"
+              iconBg="#ECFDF5"
+              iconColor={colors.green[600]}
+              label="Net Profit"
+              value={fmt(data?.month.netProfit)}
+              valueStyle={{ color: colors.green[600] }}
             />
           </Card>
 
@@ -538,6 +588,22 @@ export default function DashboardScreen() {
               label="Total Profit"
               value={fmt(data?.total.profit)}
               valueStyle={{ color: colors.indigo[600] }}
+            />
+            <MetricRow
+              icon="radio"
+              iconBg="#FDF4FF"
+              iconColor="#A855F7"
+              label="Total Marketing"
+              value={fmt(data?.total.marketing)}
+              valueStyle={{ color: "#A855F7" }}
+            />
+            <MetricRow
+              icon="star"
+              iconBg="#ECFDF5"
+              iconColor={colors.green[500]}
+              label="Total Net Profit"
+              value={fmt(data?.total.netProfit)}
+              valueStyle={{ color: colors.green[600] }}
             />
           </Card>
           {weeklyChartData && weeklyChartData.length > 0 && (

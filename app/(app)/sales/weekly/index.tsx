@@ -29,6 +29,7 @@ export interface WeeklySummary {
   profit: number;
   payments: number;
   returned: number;
+  marketing: number; // add
   due: number;
 }
 
@@ -169,12 +170,12 @@ export default function WeeklyScreen() {
             const settled = w.due <= 0;
             const metrics: MetricConfig[] = [
               {
-                label: "Gross Sales",
+                label: "Sales",
                 value: fmt(w.sales),
                 color: colors.gray[900],
-                icon: "bar-chart-2",
-                iconBg: "#EEF2FF",
-                iconColor: colors.indigo[500],
+                icon: "trending-up",
+                iconBg: "#ECFDF5",
+                iconColor: colors.green[500],
               },
               {
                 label: "Profit (30%)",
@@ -199,6 +200,15 @@ export default function WeeklyScreen() {
                 icon: "rotate-ccw",
                 iconBg: "#FFF7ED",
                 iconColor: colors.orange[500],
+              },
+              // NEW
+              {
+                label: "Marketing",
+                value: fmt(w.marketing),
+                color: "#A855F7",
+                icon: "radio",
+                iconBg: "#FDF4FF",
+                iconColor: "#A855F7",
               },
             ];
 

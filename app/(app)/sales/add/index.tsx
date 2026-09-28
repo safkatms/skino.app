@@ -22,14 +22,9 @@ import { enqueue } from "@/lib/offline-queue";
 import NetInfo from "@react-native-community/netinfo";
 import Feather from "@expo/vector-icons/Feather";
 
-type Tab = "sale" | "payment" | "return";
+type Tab = "sale" | "payment" | "return" | "marketing";
 
-const TAB_CONFIG: {
-  id: Tab;
-  label: string;
-  color: string;
-  icon: React.ComponentProps<typeof Feather>["name"];
-}[] = [
+const TAB_CONFIG = [
   {
     id: "sale",
     label: "Sale",
@@ -48,7 +43,13 @@ const TAB_CONFIG: {
     color: colors.orange[500],
     icon: "rotate-ccw",
   },
-];
+  { id: "marketing", label: "Marketing", color: "#A855F7", icon: "radio" },
+] satisfies {
+  id: Tab;
+  label: string;
+  color: string;
+  icon: React.ComponentProps<typeof Feather>["name"];
+}[];
 
 type HeroConfig = {
   eyebrow: string;
@@ -76,18 +77,26 @@ const HERO: Record<Tab, HeroConfig> = {
     sub: "Correct the return value for a specific week",
     icon: "rotate-ccw",
   },
+  marketing: {
+    eyebrow: "Sales Intake",
+    label: "Marketing Expense",
+    sub: "Record a marketing cost against a specific week",
+    icon: "radio",
+  },
 };
 
 const HINT: Record<Tab, string> = {
   sale: "This sale will be recorded in the current open week",
   payment: "Payment will be applied to the selected week's balance",
   return: "Return amount will adjust the selected week's total",
+  marketing: "Marketing cost will be deducted from the selected week's profit",
 };
 
 const BTN_LABEL: Record<Tab, string> = {
   sale: "Add Sale",
   payment: "Record Payment",
   return: "Apply Correction",
+  marketing: "Log Expense",
 };
 
 export default function AddSalesScreen() {
@@ -105,7 +114,9 @@ export default function AddSalesScreen() {
       ? colors.indigo[600]
       : tab === "payment"
         ? colors.green[600]
-        : colors.orange[500];
+        : tab === "marketing"
+          ? "#A855F7"
+          : colors.orange[500];
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -146,7 +157,17 @@ export default function AddSalesScreen() {
     },
     onError: (e) => setErrorMsg(getApiErrorMessage(e)),
   });
-
+  const addMarketing = useMutation({
+    mutationFn: (d: { amount: number; weekKey?: string }) =>
+      api.post("/sales/marketing", d),
+    onSuccess: () => {
+      invalidate();
+      setSuccessMsg("✓ Marketing expense logged!");
+      setAmount("");
+      setWeekKey("");
+    },
+    onError: (e) => setErrorMsg(getApiErrorMessage(e)),
+  });
   const evalAmount = (expr: string): number => {
     const parts = expr
       .split("+")
@@ -174,11 +195,16 @@ export default function AddSalesScreen() {
     }
     if (tab === "sale") addSale.mutate(amt);
     else if (tab === "payment") addPayment.mutate({ amount: amt, weekKey: wk });
-    else addReturn.mutate({ amount: amt, weekKey: wk });
+    else if (tab === "return") addReturn.mutate({ amount: amt, weekKey: wk });
+    else if (tab === "marketing")
+      addMarketing.mutate({ amount: amt, weekKey: wk });
   };
 
   const isPending =
-    addSale.isPending || addPayment.isPending || addReturn.isPending;
+    addSale.isPending ||
+    addPayment.isPending ||
+    addReturn.isPending ||
+    addMarketing.isPending;
   const hero = HERO[tab];
 
   const switchTab = (id: Tab) => {
@@ -194,7 +220,9 @@ export default function AddSalesScreen() {
       ? "Amount Received (BDT)"
       : tab === "return"
         ? "Adjustment Value (BDT)"
-        : "Amount (BDT)";
+        : tab === "marketing"
+          ? "Marketing Cost (BDT)"
+          : "Amount (BDT)";
 
   return (
     <KeyboardAvoidingView
@@ -311,7 +339,7 @@ export default function AddSalesScreen() {
                 </Text>
               )}
             {/* Week picker (payment / return only) */}
-            {(tab === "payment" || tab === "return") && (
+            {(tab === "payment" || tab === "return" || tab === "marketing") && (
               <WeekPicker
                 label="Target Week"
                 weekKeys={weekKeys}
