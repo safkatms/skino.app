@@ -212,9 +212,14 @@ export default function WeekEntriesScreen() {
   const count = entries?.length ?? 0;
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[styles.root]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top, height: 64 + insets.top },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
           hitSlop={8}

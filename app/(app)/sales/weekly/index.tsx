@@ -7,13 +7,11 @@ import {
   RefreshControl,
   StyleSheet,
   ImageBackground,
-  Image,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import { useRouter } from "expo-router";
-import { logout } from "@/lib/auth";
 import { useAuthStore } from "@/store/auth.store";
 import { api } from "@/lib/axios";
 import { Spinner } from "@/components/ui/Spinner";
@@ -21,70 +19,43 @@ import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { colors } from "@/components/ui/theme";
 import type { PaginatedResponse } from "@/types/api";
-
-export interface WeeklySummary {
-  weekKey: string;
-  label: string;
-  sales: number;
-  profit: number;
-  payments: number;
-  returned: number;
-  marketing: number; // add
-  due: number;
-}
+import { WeeklySummary } from "@/components/dashboard/WeeklyTrend";
 
 const fmt = (v: number) =>
   `৳${v.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 const LIMIT = 8;
 
-type MetricConfig = {
-  label: string;
-  value: string;
-  color: string;
-  icon: React.ComponentProps<typeof Feather>["name"];
-  iconBg: string;
-  iconColor: string;
-};
-
-function IconBadge({
-  name,
-  bg,
-  color,
-}: {
-  name: React.ComponentProps<typeof Feather>["name"];
-  bg: string;
-  color: string;
-}) {
-  return (
-    <View style={[styles.iconBadge, { backgroundColor: bg }]}>
-      <Feather name={name} size={15} color={color} />
-    </View>
-  );
-}
-
-function MetricRow({
-  label,
-  value,
-  color,
-  icon,
-  iconBg,
-  iconColor,
-}: MetricConfig) {
-  return (
-    <View style={styles.row}>
-      <View style={styles.rowLeft}>
-        <IconBadge name={icon} bg={iconBg} color={iconColor} />
-        <Text style={styles.rowLabel}>{label}</Text>
-      </View>
-      <Text style={[styles.rowValue, { color }]}>{value}</Text>
-    </View>
-  );
+function parseWeekLabel(weekKey: string): string {
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const [s, e] = weekKey.split("_");
+  const sd = new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8));
+  const ed = new Date(+e.slice(0, 4), +e.slice(4, 6) - 1, +e.slice(6, 8));
+  const sm = months[sd.getMonth()];
+  const em = months[ed.getMonth()];
+  const sy = sd.getFullYear();
+  const ey = ed.getFullYear();
+  if (sy === ey && sm === em)
+    return `${sm} ${sd.getDate()} – ${ed.getDate()}, ${sy}`;
+  if (sy === ey) return `${sm} ${sd.getDate()} – ${em} ${ed.getDate()}, ${sy}`;
+  return `${sm} ${sd.getDate()}, ${sy} – ${em} ${ed.getDate()}, ${ey}`;
 }
 
 export default function WeeklyScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { setAuthenticated } = useAuthStore();
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -105,20 +76,13 @@ export default function WeeklyScreen() {
     setRefreshing(false);
   };
 
-  const handleLogout = async () => {
-    await logout();
-    setAuthenticated(false);
-    router.replace("/(auth)/login");
-  };
-
   const rows = data?.data ?? [];
   const meta = data?.meta;
   const totalPages = meta?.totalPages ?? 1;
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
+    <View style={styles.root}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.headerTitle}>Weekly Ledger</Text>
       </View>
 
@@ -148,19 +112,17 @@ export default function WeeklyScreen() {
             resizeMode="cover"
           >
             <View style={styles.heroContent}>
-              <View style={styles.heroLeft}>
-                <View style={styles.heroIconBadge}>
-                  <Feather name="calendar" size={22} color="#fff" />
-                </View>
-                <View style={styles.heroTextBlock}>
-                  <Text style={styles.heroEyebrow}>Sales</Text>
-                  <Text style={styles.heroTitle}>Weekly Ledger</Text>
-                  <Text style={styles.heroSub}>
-                    {meta
-                      ? `${meta.totalItems} week${meta.totalItems !== 1 ? "s" : ""} on record`
-                      : ""}
-                  </Text>
-                </View>
+              <View style={styles.heroIconBadge}>
+                <Feather name="calendar" size={22} color="#fff" />
+              </View>
+              <View style={styles.heroTextBlock}>
+                <Text style={styles.heroEyebrow}>SALES</Text>
+                <Text style={styles.heroTitle}>Weekly Ledger</Text>
+                <Text style={styles.heroSub}>
+                  {meta
+                    ? `${meta.totalItems} week${meta.totalItems !== 1 ? "s" : ""} on record`
+                    : ""}
+                </Text>
               </View>
             </View>
           </ImageBackground>
@@ -168,49 +130,7 @@ export default function WeeklyScreen() {
           {/* Week cards */}
           {rows.map((w) => {
             const settled = w.due <= 0;
-            const metrics: MetricConfig[] = [
-              {
-                label: "Sales",
-                value: fmt(w.sales),
-                color: colors.gray[900],
-                icon: "trending-up",
-                iconBg: "#ECFDF5",
-                iconColor: colors.green[500],
-              },
-              {
-                label: "Profit (30%)",
-                value: fmt(w.profit),
-                color: colors.indigo[600],
-                icon: "percent",
-                iconBg: "#EEF2FF",
-                iconColor: colors.indigo[500],
-              },
-              {
-                label: "Collected",
-                value: fmt(w.payments),
-                color: colors.green[600],
-                icon: "download",
-                iconBg: "#ECFDF5",
-                iconColor: colors.green[600],
-              },
-              {
-                label: "Returned",
-                value: fmt(w.returned),
-                color: colors.orange[500],
-                icon: "rotate-ccw",
-                iconBg: "#FFF7ED",
-                iconColor: colors.orange[500],
-              },
-              // NEW
-              {
-                label: "Marketing",
-                value: fmt(w.marketing),
-                color: "#A855F7",
-                icon: "radio",
-                iconBg: "#FDF4FF",
-                iconColor: "#A855F7",
-              },
-            ];
+            const dateLabel = parseWeekLabel(w.weekKey);
 
             return (
               <TouchableOpacity
@@ -219,18 +139,25 @@ export default function WeeklyScreen() {
                 onPress={() =>
                   router.push(`/(app)/sales/entries/${w.weekKey}` as any)
                 }
-                activeOpacity={0.7}
+                activeOpacity={0.85}
               >
                 {/* Card header */}
                 <View style={styles.cardHeader}>
                   <View style={styles.cardHeaderLeft}>
-                    <IconBadge
-                      name="calendar"
-                      bg={settled ? "#ECFDF5" : "#EEF2FF"}
-                      color={settled ? colors.green[600] : colors.indigo[500]}
-                    />
+                    <View
+                      style={[
+                        styles.calIconBg,
+                        settled ? styles.calIconBgGreen : styles.calIconBgRed,
+                      ]}
+                    >
+                      <Feather
+                        name="calendar"
+                        size={18}
+                        color={settled ? colors.green[600] : colors.red[500]}
+                      />
+                    </View>
                     <View>
-                      <Text style={styles.cardWeekLabel}>{w.label}</Text>
+                      <Text style={styles.cardDateLabel}>{dateLabel}</Text>
                       <Text style={styles.cardWeekKey}>{w.weekKey}</Text>
                     </View>
                   </View>
@@ -241,38 +168,175 @@ export default function WeeklyScreen() {
                         settled ? styles.badgeGreen : styles.badgeRed,
                       ]}
                     >
+                      {!settled && (
+                        <Feather
+                          name="alert-circle"
+                          size={11}
+                          color={colors.red[500]}
+                          style={{ marginRight: 3 }}
+                        />
+                      )}
+                      {settled && (
+                        <Feather
+                          name="check-circle"
+                          size={11}
+                          color={colors.green[600]}
+                          style={{ marginRight: 3 }}
+                        />
+                      )}
                       <Text
                         style={[
                           styles.badgeText,
                           settled ? styles.badgeTextGreen : styles.badgeTextRed,
                         ]}
                       >
-                        {settled
-                          ? `Settled: ${fmt(Math.abs(w.due))}`
-                          : `Due ${fmt(w.due)}`}
+                        {settled ? "Settled" : "Due"}
                       </Text>
                     </View>
                     <Feather
                       name="chevron-right"
                       size={16}
-                      color={colors.indigo[400]}
+                      color={colors.gray[400]}
                     />
                   </View>
                 </View>
 
-                {/* Metrics */}
-                <View style={styles.cardBody}>
-                  {metrics.map((m, i) => (
+                {/* Sales hero row */}
+                <View style={styles.salesRow}>
+                  <View style={styles.salesIconBg}>
+                    <Feather
+                      name="shopping-cart"
+                      size={20}
+                      color={colors.gray[500]}
+                    />
+                  </View>
+                  <View style={styles.salesTextBlock}>
+                    <Text style={styles.salesLabel}>Sales</Text>
+                    <Text style={styles.salesValue}>{fmt(w.sales)}</Text>
+                  </View>
+                </View>
+
+                {/* Profit + Net Profit tiles */}
+                <View style={styles.tileRow}>
+                  <View style={[styles.tile, styles.tilePurple]}>
+                    <View style={styles.tileIconBg}>
+                      <Feather
+                        name="dollar-sign"
+                        size={16}
+                        color={colors.indigo[600]}
+                      />
+                    </View>
+                    <Text style={styles.tileLabel}>Profit (30%)</Text>
+                    <Text
+                      style={[styles.tileValue, { color: colors.indigo[600] }]}
+                    >
+                      {fmt(w.profit)}
+                    </Text>
+                  </View>
+                  <View style={[styles.tile, styles.tileGreen]}>
+                    <View style={[styles.tileIconBg]}>
+                      <Feather
+                        name="trending-up"
+                        size={16}
+                        color={colors.green[600]}
+                      />
+                    </View>
+                    <Text style={styles.tileLabel}>Net Profit</Text>
+                    <Text
+                      style={[styles.tileValue, { color: colors.green[600] }]}
+                    >
+                      {fmt(w.netProfit)}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* 4-item small tile row */}
+                <View style={styles.smallTileRow}>
+                  <View style={styles.smallTile}>
                     <View
-                      key={m.label}
                       style={[
-                        styles.rowWrapper,
-                        i < metrics.length - 1 && styles.rowBorder,
+                        styles.smallIconBg,
+                        { backgroundColor: "#FFF7ED" },
                       ]}
                     >
-                      <MetricRow {...m} />
+                      <Feather
+                        name="rotate-ccw"
+                        size={13}
+                        color={colors.orange[500]}
+                      />
                     </View>
-                  ))}
+                    <Text style={styles.smallTileLabel}>Returned</Text>
+                    <Text
+                      style={[
+                        styles.smallTileValue,
+                        { color: colors.orange[500] },
+                      ]}
+                    >
+                      {fmt(w.returned)}
+                    </Text>
+                  </View>
+                  <View style={styles.smallTile}>
+                    <View
+                      style={[
+                        styles.smallIconBg,
+                        { backgroundColor: "#FDF4FF" },
+                      ]}
+                    >
+                      <Feather name="radio" size={13} color="#A855F7" />
+                    </View>
+                    <Text style={styles.smallTileLabel}>Marketing</Text>
+                    <Text style={[styles.smallTileValue, { color: "#A855F7" }]}>
+                      {fmt(w.marketing)}
+                    </Text>
+                  </View>
+                  <View style={styles.smallTile}>
+                    <View
+                      style={[
+                        styles.smallIconBg,
+                        { backgroundColor: "#ECFDF5" },
+                      ]}
+                    >
+                      <Feather
+                        name="download"
+                        size={13}
+                        color={colors.green[600]}
+                      />
+                    </View>
+                    <Text style={styles.smallTileLabel}>Collected</Text>
+                    <Text
+                      style={[
+                        styles.smallTileValue,
+                        { color: colors.green[600] },
+                      ]}
+                    >
+                      {fmt(w.payments)}
+                    </Text>
+                  </View>
+                  <View style={styles.smallTile}>
+                    <View
+                      style={[
+                        styles.smallIconBg,
+                        { backgroundColor: w.due > 0 ? "#FEF2F2" : "#F3F4F6" },
+                      ]}
+                    >
+                      <Feather
+                        name="file-text"
+                        size={13}
+                        color={w.due > 0 ? colors.red[500] : colors.gray[400]}
+                      />
+                    </View>
+                    <Text style={styles.smallTileLabel}>Due</Text>
+                    <Text
+                      style={[
+                        styles.smallTileValue,
+                        {
+                          color: w.due > 0 ? colors.red[500] : colors.gray[400],
+                        },
+                      ]}
+                    >
+                      {fmt(Math.abs(w.due))}
+                    </Text>
+                  </View>
                 </View>
               </TouchableOpacity>
             );
@@ -290,43 +354,23 @@ export default function WeeklyScreen() {
                 <Feather
                   name="chevron-left"
                   size={16}
-                  color={page === 1 ? colors.gray[400] : colors.gray[700]}
+                  color={page === 1 ? colors.gray[300] : colors.gray[700]}
                 />
-                <Text
-                  style={[
-                    styles.pageBtnText,
-                    page === 1 && styles.pageBtnDisabled,
-                  ]}
-                >
-                  Prev
-                </Text>
               </TouchableOpacity>
-
               <Text style={styles.pageIndicator}>
-                <Text style={styles.pageNum}>{page}</Text>
-                {" of "}
-                {totalPages}
+                Page <Text style={styles.pageNum}>{page}</Text> of {totalPages}
               </Text>
-
               <TouchableOpacity
                 style={styles.pageBtn}
                 onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
                 activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.pageBtnText,
-                    page === totalPages && styles.pageBtnDisabled,
-                  ]}
-                >
-                  Next
-                </Text>
                 <Feather
                   name="chevron-right"
                   size={16}
                   color={
-                    page === totalPages ? colors.gray[400] : colors.gray[700]
+                    page === totalPages ? colors.gray[300] : colors.gray[700]
                   }
                 />
               </TouchableOpacity>
@@ -339,12 +383,11 @@ export default function WeeklyScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.gray[50] },
+  root: { flex: 1, backgroundColor: "#F4F5F9" },
 
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 12,
     backgroundColor: "#fff",
@@ -352,110 +395,155 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.gray[100],
   },
   headerTitle: { fontSize: 17, fontWeight: "800", color: colors.gray[900] },
-  logoutBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
 
-  scrollContent: { padding: 16, gap: 12, paddingBottom: 32 },
+  scrollContent: { padding: 16, gap: 10, paddingBottom: 40 },
 
   // Hero
   hero: {
     borderRadius: 20,
-    minHeight: 160,
-    padding: 20,
+    minHeight: 130,
+    padding: 18,
     overflow: "hidden",
     justifyContent: "center",
   },
   heroImage: { borderRadius: 20 },
-  heroContent: { flexDirection: "row", alignItems: "center" },
-  heroLeft: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 14,
-    flex: 1,
-  },
+  heroContent: { flexDirection: "row", alignItems: "center", gap: 14 },
   heroIconBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
-  heroTextBlock: { flex: 1, gap: 4, justifyContent: "center" },
+  heroTextBlock: { gap: 2 },
   heroEyebrow: {
     fontSize: 10,
     fontWeight: "700",
     color: "rgba(255,255,255,0.6)",
-    textTransform: "uppercase",
-    letterSpacing: 1.4,
+    letterSpacing: 1.2,
   },
-  heroTitle: { fontSize: 22, fontWeight: "800", color: "#fff" },
-  heroSub: { fontSize: 13, color: "rgba(255,255,255,0.65)" },
+  heroTitle: { fontSize: 20, fontWeight: "800", color: "#fff" },
+  heroSub: { fontSize: 12, color: "rgba(255,255,255,0.65)" },
 
-  // Icon badge
-  iconBadge: {
+  // Card
+  card: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#EEF0F5",
+    borderRadius: 18,
+    overflow: "hidden",
+  },
+
+  // Card header
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  cardHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  cardHeaderRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+  calIconBg: {
     width: 34,
     height: 34,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
+  calIconBgGreen: { backgroundColor: "#ECFDF5" },
+  calIconBgRed: { backgroundColor: "#FEF2F2" },
+  cardDateLabel: { fontSize: 13, fontWeight: "700", color: colors.gray[900] },
+  cardWeekKey: { fontSize: 10, color: colors.gray[400], marginTop: 1 },
 
-  // Card
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.gray[100],
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-    overflow: "hidden",
-  },
-  cardHeader: {
+  badge: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray[100],
+    borderRadius: 20,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
   },
-  cardHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  cardHeaderRight: { flexDirection: "row", alignItems: "center", gap: 8 },
-  cardWeekLabel: { fontSize: 14, fontWeight: "700", color: colors.gray[900] },
-  cardWeekKey: { fontSize: 11, color: colors.gray[400], marginTop: 2 },
-
-  badge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeGreen: { backgroundColor: colors.green[50] },
-  badgeRed: { backgroundColor: colors.red[50] },
+  badgeGreen: { borderColor: colors.green[100], borderWidth: 1 },
+  badgeRed: { borderColor: colors.red[100], borderWidth: 1 },
   badgeText: { fontSize: 11, fontWeight: "700" },
   badgeTextGreen: { color: colors.green[600] },
   badgeTextRed: { color: colors.red[500] },
 
-  cardBody: { paddingHorizontal: 16, paddingVertical: 4 },
-  rowWrapper: {},
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.gray[100] },
-  row: {
+  // Sales hero row
+  salesRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
   },
-  rowLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  rowLabel: { fontSize: 13, color: colors.gray[500] },
-  rowValue: { fontSize: 13, fontWeight: "700" },
+  salesIconBg: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  salesTextBlock: { gap: 1 },
+  salesLabel: { fontSize: 11, color: colors.gray[500], fontWeight: "600" },
+  salesValue: { fontSize: 20, fontWeight: "800", color: colors.gray[900] },
+
+  // Profit + Net Profit 2-col tiles
+  tileRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  tile: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 10,
+    gap: 4,
+  },
+  tilePurple: { borderColor: colors.indigo[300] },
+  tileGreen: { borderColor: colors.green[300] },
+  tileIconBg: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tileLabel: { fontSize: 11, color: colors.gray[500], fontWeight: "500" },
+  tileValue: { fontSize: 13, fontWeight: "800" },
+
+  // 4-item small tiles
+  smallTileRow: {
+    flexDirection: "row",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  smallTile: {
+    flex: 1,
+    alignItems: "center",
+    gap: 3,
+  },
+  smallIconBg: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  smallTileLabel: { fontSize: 10, color: colors.gray[400], fontWeight: "500" },
+  smallTileValue: { fontSize: 11, fontWeight: "700" },
 
   // Pagination
   paginationRow: {
@@ -463,15 +551,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#fff",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.gray[100],
-    paddingHorizontal: 16,
+    borderRadius: 18,
+    paddingHorizontal: 20,
     paddingVertical: 12,
   },
-  pageBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
-  pageBtnText: { fontSize: 13, fontWeight: "700", color: colors.gray[500] },
-  pageBtnDisabled: { color: colors.gray[400] },
+  pageBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: colors.gray[100],
+    alignItems: "center",
+    justifyContent: "center",
+  },
   pageIndicator: { fontSize: 13, color: colors.gray[400] },
   pageNum: { fontWeight: "800", color: colors.gray[900] },
 });
