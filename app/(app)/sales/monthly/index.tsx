@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -45,6 +45,7 @@ export default function MonthlyScreen() {
   const insets = useSafeAreaInsets();
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["sales", "summary", "monthly", "paginated", page],
@@ -81,6 +82,7 @@ export default function MonthlyScreen() {
         </View>
       ) : (
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -118,201 +120,92 @@ export default function MonthlyScreen() {
           {rows.map((m) => {
             const cleared = m.due <= 0;
             const dateLabel = parseMonthLabel(m.month);
+            const accentColor = cleared ? colors.green[500] : colors.red[500];
+
+            const rows2: { label: string; icon: React.ComponentProps<typeof Feather>["name"]; value: string; color: string }[] = [
+              { label: "Sales", icon: "shopping-cart", value: fmt(m.sales), color: colors.gray[900] },
+              { label: "Profit (30%)", icon: "dollar-sign", value: fmt(m.profit), color: colors.indigo[600] },
+              { label: "Net Profit", icon: "trending-up", value: fmt(m.netProfit), color: colors.green[600] },
+              { label: "Collected", icon: "download", value: fmt(m.payments), color: colors.green[600] },
+              { label: "Returned", icon: "rotate-ccw", value: fmt(m.returned), color: colors.orange[500] },
+              { label: "Marketing", icon: "radio", value: fmt(m.marketing), color: "#A855F7" },
+              { label: "Due", icon: "file-text", value: fmt(Math.abs(m.due)), color: m.due > 0 ? colors.red[500] : colors.gray[400] },
+            ];
 
             return (
-              <View key={m.month} style={styles.card}>
+              <View
+                key={m.month}
+                style={[styles.card, { borderLeftColor: accentColor }]}
+              >
                 {/* Card header */}
                 <View style={styles.cardHeader}>
                   <View style={styles.cardHeaderLeft}>
-                    <View
-                      style={[
-                        styles.calIconBg,
-                        cleared ? styles.calIconBgGreen : styles.calIconBgRed,
-                      ]}
-                    >
-                      <Feather
-                        name="calendar"
-                        size={18}
-                        color={cleared ? colors.green[600] : colors.red[500]}
-                      />
-                    </View>
+                    <Feather name="calendar" size={15} color={accentColor} />
                     <View>
                       <Text style={styles.cardDateLabel}>{dateLabel}</Text>
                       <Text style={styles.cardMonthKey}>{m.month}</Text>
                     </View>
                   </View>
-                  <View style={styles.cardHeaderRight}>
-                    <View
+                  <View
+                    style={[
+                      styles.badge,
+                      cleared ? styles.badgeGreen : styles.badgeRed,
+                    ]}
+                  >
+                    <Feather
+                      name={cleared ? "check-circle" : "alert-circle"}
+                      size={11}
+                      color={cleared ? colors.green[600] : colors.red[500]}
+                      style={{ marginRight: 3 }}
+                    />
+                    <Text
                       style={[
-                        styles.badge,
-                        cleared ? styles.badgeGreen : styles.badgeRed,
+                        styles.badgeText,
+                        cleared ? styles.badgeTextGreen : styles.badgeTextRed,
                       ]}
                     >
-                      {cleared ? (
+                      {cleared ? "Cleared" : "Due"}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Metric rows */}
+                <View style={styles.metricList}>
+                  {rows2.map((r, i) => (
+                    <View
+                      key={r.label}
+                      style={[
+                        styles.metricRow,
+                        i < rows2.length - 1 && styles.metricRowBorder,
+                        r.label === "Sales" && styles.metricRowSales,
+                      ]}
+                    >
+                      <View style={styles.metricLabelRow}>
                         <Feather
-                          name="check-circle"
-                          size={11}
-                          color={colors.green[600]}
-                          style={{ marginRight: 3 }}
+                          name={r.icon}
+                          size={r.label === "Sales" ? 14 : 12}
+                          color={r.color}
                         />
-                      ) : (
-                        <Feather
-                          name="alert-circle"
-                          size={11}
-                          color={colors.red[500]}
-                          style={{ marginRight: 3 }}
-                        />
-                      )}
+                        <Text
+                          style={[
+                            styles.metricLabel,
+                            r.label === "Sales" && styles.metricLabelSales,
+                          ]}
+                        >
+                          {r.label}
+                        </Text>
+                      </View>
                       <Text
                         style={[
-                          styles.badgeText,
-                          cleared ? styles.badgeTextGreen : styles.badgeTextRed,
+                          styles.metricValue,
+                          { color: r.color },
+                          r.label === "Sales" && styles.metricValueSales,
                         ]}
                       >
-                        {cleared ? "Cleared" : "Due"}
+                        {r.value}
                       </Text>
                     </View>
-                  </View>
-                </View>
-
-                {/* Sales hero row */}
-                <View style={styles.salesRow}>
-                  <View style={styles.salesIconBg}>
-                    <Feather
-                      name="shopping-cart"
-                      size={18}
-                      color={colors.gray[500]}
-                    />
-                  </View>
-                  <View style={styles.salesTextBlock}>
-                    <Text style={styles.salesLabel}>Sales</Text>
-                    <Text style={styles.salesValue}>{fmt(m.sales)}</Text>
-                  </View>
-                </View>
-
-                {/* Profit + Net Profit tiles */}
-                <View style={styles.tileRow}>
-                  <View style={[styles.tile, styles.tilePurple]}>
-                    <View style={styles.tileIconBg}>
-                      <Feather
-                        name="dollar-sign"
-                        size={14}
-                        color={colors.indigo[600]}
-                      />
-                    </View>
-                    <Text style={styles.tileLabel}>Profit (30%)</Text>
-                    <Text
-                      style={[styles.tileValue, { color: colors.indigo[600] }]}
-                    >
-                      {fmt(m.profit)}
-                    </Text>
-                  </View>
-                  <View style={[styles.tile, styles.tileGreen]}>
-                    <View style={styles.tileIconBg}>
-                      <Feather
-                        name="trending-up"
-                        size={14}
-                        color={colors.green[600]}
-                      />
-                    </View>
-                    <Text style={styles.tileLabel}>Net Profit</Text>
-                    <Text
-                      style={[styles.tileValue, { color: colors.green[600] }]}
-                    >
-                      {fmt(m.netProfit)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* 4-item small tile row */}
-                <View style={styles.smallTileRow}>
-                  <View style={styles.smallTile}>
-                    <View
-                      style={[
-                        styles.smallIconBg,
-                        { backgroundColor: "#FFF7ED" },
-                      ]}
-                    >
-                      <Feather
-                        name="rotate-ccw"
-                        size={12}
-                        color={colors.orange[500]}
-                      />
-                    </View>
-                    <Text style={styles.smallTileLabel}>Returned</Text>
-                    <Text
-                      style={[
-                        styles.smallTileValue,
-                        { color: colors.orange[500] },
-                      ]}
-                    >
-                      {fmt(m.returned)}
-                    </Text>
-                  </View>
-                  <View style={styles.smallTile}>
-                    <View
-                      style={[
-                        styles.smallIconBg,
-                        { backgroundColor: "#FDF4FF" },
-                      ]}
-                    >
-                      <Feather name="radio" size={12} color="#A855F7" />
-                    </View>
-                    <Text style={styles.smallTileLabel}>Marketing</Text>
-                    <Text style={[styles.smallTileValue, { color: "#A855F7" }]}>
-                      {fmt(m.marketing)}
-                    </Text>
-                  </View>
-                  <View style={styles.smallTile}>
-                    <View
-                      style={[
-                        styles.smallIconBg,
-                        { backgroundColor: "#ECFDF5" },
-                      ]}
-                    >
-                      <Feather
-                        name="download"
-                        size={12}
-                        color={colors.green[600]}
-                      />
-                    </View>
-                    <Text style={styles.smallTileLabel}>Collected</Text>
-                    <Text
-                      style={[
-                        styles.smallTileValue,
-                        { color: colors.green[600] },
-                      ]}
-                    >
-                      {fmt(m.payments)}
-                    </Text>
-                  </View>
-                  <View style={styles.smallTile}>
-                    <View
-                      style={[
-                        styles.smallIconBg,
-                        {
-                          backgroundColor: m.due > 0 ? "#FEF2F2" : "#F3F4F6",
-                        },
-                      ]}
-                    >
-                      <Feather
-                        name="file-text"
-                        size={12}
-                        color={m.due > 0 ? colors.red[500] : colors.gray[400]}
-                      />
-                    </View>
-                    <Text style={styles.smallTileLabel}>Due</Text>
-                    <Text
-                      style={[
-                        styles.smallTileValue,
-                        {
-                          color: m.due > 0 ? colors.red[500] : colors.gray[400],
-                        },
-                      ]}
-                    >
-                      {fmt(Math.abs(m.due))}
-                    </Text>
-                  </View>
+                  ))}
                 </View>
               </View>
             );
@@ -323,7 +216,10 @@ export default function MonthlyScreen() {
             <View style={styles.paginationRow}>
               <TouchableOpacity
                 style={styles.pageBtn}
-                onPress={() => setPage((p) => Math.max(1, p - 1))}
+                onPress={() => {
+                  setPage((p) => Math.max(1, p - 1));
+                  scrollRef.current?.scrollTo({ y: 0, animated: true });
+                }}
                 disabled={page === 1}
                 activeOpacity={0.7}
               >
@@ -338,7 +234,10 @@ export default function MonthlyScreen() {
               </Text>
               <TouchableOpacity
                 style={styles.pageBtn}
-                onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onPress={() => {
+                  setPage((p) => Math.min(totalPages, p + 1));
+                  scrollRef.current?.scrollTo({ y: 0, animated: true });
+                }}
                 disabled={page === totalPages}
                 activeOpacity={0.7}
               >
@@ -403,10 +302,15 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#EEF0F5",
-    borderRadius: 18,
+    borderRadius: 14,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.gray[300],
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
 
   cardHeader: {
@@ -414,21 +318,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 11,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
-  cardHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-  cardHeaderRight: { flexDirection: "row", alignItems: "center", gap: 6 },
-  calIconBg: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  calIconBgGreen: { backgroundColor: "#ECFDF5" },
-  calIconBgRed: { backgroundColor: "#FEF2F2" },
+  cardHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   cardDateLabel: { fontSize: 13, fontWeight: "700", color: colors.gray[900] },
   cardMonthKey: { fontSize: 10, color: colors.gray[400], marginTop: 1 },
 
@@ -436,74 +330,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 20,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  badgeGreen: { borderColor: colors.green[100], borderWidth: 1 },
-  badgeRed: { borderColor: colors.red[100], borderWidth: 1 },
+  badgeGreen: {
+    backgroundColor: "#ECFDF5",
+    borderColor: colors.green[200],
+    borderWidth: 1,
+  },
+  badgeRed: {
+    backgroundColor: "#FEF2F2",
+    borderColor: colors.red[200],
+    borderWidth: 1,
+  },
   badgeText: { fontSize: 11, fontWeight: "700" },
   badgeTextGreen: { color: colors.green[600] },
   badgeTextRed: { color: colors.red[500] },
 
-  salesRow: {
+  metricList: { paddingHorizontal: 14, paddingVertical: 4 },
+  metricRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  salesIconBg: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  salesTextBlock: { gap: 1 },
-  salesLabel: { fontSize: 11, color: colors.gray[500], fontWeight: "600" },
-  salesValue: { fontSize: 20, fontWeight: "800", color: colors.gray[900] },
-
-  tileRow: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
   },
-  tile: { flex: 1, borderRadius: 12, padding: 10, gap: 4 },
-  tilePurple: { borderColor: colors.indigo[300], borderWidth: 1 },
-  tileGreen: { borderColor: colors.green[300], borderWidth: 1 },
-  tileIconBg: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
+  metricRowBorder: { borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
+  metricRowSales: { paddingVertical: 10 },
+  metricLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  metricLabel: { fontSize: 13, color: colors.gray[500], fontWeight: "500" },
+  metricLabelSales: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.gray[700],
   },
-  tileLabel: { fontSize: 11, color: colors.gray[500], fontWeight: "500" },
-  tileValue: { fontSize: 13, fontWeight: "800" },
-
-  smallTileRow: {
-    flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
-  },
-  smallTile: { flex: 1, alignItems: "center", gap: 3 },
-  smallIconBg: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  smallTileLabel: { fontSize: 10, color: colors.gray[400], fontWeight: "500" },
-  smallTileValue: { fontSize: 11, fontWeight: "700" },
+  metricValue: { fontSize: 13, fontWeight: "700" },
+  metricValueSales: { fontSize: 16, fontWeight: "800" },
 
   paginationRow: {
     flexDirection: "row",

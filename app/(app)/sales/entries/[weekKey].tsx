@@ -57,6 +57,12 @@ const TYPE_LABEL: Record<string, string> = {
   RETURN: "Return",
   MARKETING: "Marketing",
 };
+const TYPE_ICON: Record<string, keyof typeof Feather.glyphMap> = {
+  SALE: "trending-up",
+  PAYMENT: "check-circle",
+  RETURN: "corner-down-left",
+  MARKETING: "zap",
+};
 
 function EditModal({
   entry,
@@ -74,10 +80,11 @@ function EditModal({
 
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={modal.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <View style={modal.overlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "padding"}
+          style={{ width: "100%" }}
+        >
         <View style={modal.sheet}>
           {/* Sheet handle */}
           <View style={modal.handle} />
@@ -136,7 +143,8 @@ function EditModal({
             </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
@@ -296,29 +304,90 @@ export default function WeekEntriesScreen() {
 
           {activeTab === "daily" ? (
             dailySales && dailySales.length > 0 ? (
-              <View style={styles.dailySection}>
-                <Text style={styles.sectionTitle}>Daily Breakdown</Text>
-                {dailySales.map((d) => (
-                  <View key={d.date} style={styles.dailyRow}>
-                    <Text style={styles.dailyDate}>
-                      {new Date(d.date + "T00:00:00Z").toLocaleDateString(
-                        "en-US",
-                        {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                        },
-                      )}
-                    </Text>
-                    <View style={styles.dailyRight}>
-                      <Text style={styles.dailySales}>{fmt(d.sales)}</Text>
-                      <Text style={styles.dailyProfit}>
-                        +{fmt(d.profit)} profit
-                      </Text>
+              <>
+                {/* Week totals card */}
+                {(() => {
+                  const totalSales = dailySales.reduce(
+                    (s, d) => s + d.sales,
+                    0,
+                  );
+                  const totalProfit = dailySales.reduce(
+                    (s, d) => s + d.profit,
+                    0,
+                  );
+                  const n = dailySales.length;
+                  return (
+                    <View style={styles.totalsCard}>
+                      <View style={styles.totalItem}>
+                        <Text style={styles.totalItemLabel}>Sales</Text>
+                        <Text style={styles.totalItemValue}>
+                          {fmt(totalSales)}
+                        </Text>
+                        <Text style={styles.totalItemSub}>
+                          avg {fmt(totalSales / n)}
+                        </Text>
+                      </View>
+                      <View style={styles.totalDivider} />
+                      <View style={styles.totalItem}>
+                        <Text style={styles.totalItemLabel}>Profit</Text>
+                        <Text
+                          style={[
+                            styles.totalItemValue,
+                            { color: colors.green[600] },
+                          ]}
+                        >
+                          {fmt(totalProfit)}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.totalItemSub,
+                            { color: colors.green[500] },
+                          ]}
+                        >
+                          avg {fmt(totalProfit / n)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                ))}
-              </View>
+                  );
+                })()}
+
+                <View style={styles.dailySection}>
+                  <Text style={styles.sectionTitle}>Daily Breakdown</Text>
+                  {(() => {
+                    const bestIdx = dailySales.reduce(
+                      (bi, d, i) => (d.sales > dailySales[bi].sales ? i : bi),
+                      0,
+                    );
+                    return dailySales.map((d, i) => (
+                      <View key={d.date} style={styles.dailyRow}>
+                        <View style={styles.dailyLeft}>
+                          <Text style={styles.dailyDate}>
+                            {new Date(d.date + "T00:00:00Z").toLocaleDateString(
+                              "en-US",
+                              {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                              },
+                            )}
+                          </Text>
+                          {i === bestIdx && (
+                            <View style={styles.bestBadge}>
+                              <Text style={styles.bestBadgeText}>Best Day</Text>
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.dailyRight}>
+                          <Text style={styles.dailySales}>{fmt(d.sales)}</Text>
+                          <Text style={styles.dailyProfit}>
+                            +{fmt(d.profit)} profit
+                          </Text>
+                        </View>
+                      </View>
+                    ));
+                  })()}
+                </View>
+              </>
             ) : (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyIcon}>📊</Text>
@@ -344,70 +413,65 @@ export default function WeekEntriesScreen() {
               const isDeleting = deletingId === entry.id;
               return (
                 <View key={entry.id} style={styles.entryCard}>
-                  <View
-                    style={[styles.accentStrip, { backgroundColor: accent }]}
-                  />
-                  <View style={styles.entryInner}>
-                    <View style={styles.entryTop}>
-                      <View style={[styles.typePill, { backgroundColor: bg }]}>
-                        <Text style={[styles.typePillText, { color: accent }]}>
+                  {/* Top row: icon+type left, amount right */}
+                  <View style={styles.entryTop}>
+                    <View style={styles.entryTypeRow}>
+                      <View
+                        style={[styles.entryIconCircle, { backgroundColor: bg }]}
+                      >
+                        <Feather
+                          name={TYPE_ICON[entry.type]}
+                          size={15}
+                          color={accent}
+                        />
+                      </View>
+                      <View>
+                        <Text style={[styles.entryTypeLabel, { color: accent }]}>
                           {TYPE_LABEL[entry.type]}
                         </Text>
-                      </View>
-                      <Text style={[styles.entryAmount, { color: accent }]}>
-                        {fmt(entry.amount)}
-                      </Text>
-                    </View>
-                    <View style={styles.entryBottom}>
-                      <Text style={styles.entryDate}>
-                        {fmtDate(entry.entryDate)}
-                      </Text>
-                      {entry.note ? (
-                        <Text style={styles.entryNote}>{entry.note}</Text>
-                      ) : null}
-                      <View style={styles.entryActions}>
-                        <TouchableOpacity
-                          onPress={() => setEditEntry(entry)}
-                          hitSlop={8}
-                          style={styles.actionBtn}
-                        >
-                          <Feather
-                            name="edit"
-                            size={14}
-                            color={colors.gray[400]}
-                          />
-                          <Text style={styles.actionLabel}>Edit</Text>
-                        </TouchableOpacity>
-                        <View style={styles.actionDivider} />
-                        <TouchableOpacity
-                          onPress={() => {
-                            setDeletingId(entry.id);
-                            deleteMutation.mutate(entry.id);
-                          }}
-                          hitSlop={8}
-                          disabled={isDeleting}
-                          style={styles.actionBtn}
-                        >
-                          {isDeleting ? (
-                            <ActivityIndicator
-                              size="small"
-                              color={colors.red[500]}
-                            />
-                          ) : (
-                            <>
-                              <Feather
-                                name="trash-2"
-                                size={14}
-                                color={colors.red[500]}
-                              />
-                              <Text style={styles.actionLabelDanger}>
-                                Delete
-                              </Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
+                        <Text style={styles.entryDate}>
+                          {fmtDate(entry.entryDate)}
+                        </Text>
                       </View>
                     </View>
+                    <Text style={[styles.entryAmount, { color: accent }]}>
+                      {fmt(entry.amount)}
+                    </Text>
+                  </View>
+
+                  {/* Note */}
+                  {entry.note ? (
+                    <Text style={styles.entryNote}>{entry.note}</Text>
+                  ) : null}
+
+                  {/* Divider + actions */}
+                  <View style={styles.entryFooter}>
+                    <TouchableOpacity
+                      onPress={() => setEditEntry(entry)}
+                      hitSlop={8}
+                      style={styles.entryActionBtn}
+                    >
+                      <Feather name="edit-2" size={13} color={colors.gray[400]} />
+                      <Text style={styles.entryActionLabel}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setDeletingId(entry.id);
+                        deleteMutation.mutate(entry.id);
+                      }}
+                      hitSlop={8}
+                      disabled={isDeleting}
+                      style={styles.entryActionBtn}
+                    >
+                      {isDeleting ? (
+                        <ActivityIndicator size="small" color={colors.red[400]} />
+                      ) : (
+                        <>
+                          <Feather name="trash-2" size={13} color={colors.red[400]} />
+                          <Text style={styles.entryActionLabelDanger}>Delete</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
                   </View>
                 </View>
               );
@@ -475,55 +539,56 @@ const styles = StyleSheet.create({
   // Entry card
   entryCard: {
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.gray[100],
-    flexDirection: "row",
-    overflow: "hidden",
+    padding: 14,
+    gap: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  accentStrip: { width: 4 },
-  entryInner: { flex: 1, paddingHorizontal: 14, paddingVertical: 13, gap: 10 },
-
   entryTop: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  typePill: {
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  typePillText: { fontSize: 11, fontWeight: "700" },
-  entryAmount: { fontSize: 16, fontWeight: "800" },
-
-  entryBottom: { gap: 6 },
-  entryDate: { fontSize: 12, color: colors.gray[400] },
-  entryNote: { fontSize: 12, color: colors.gray[400], fontStyle: "italic" },
-
-  entryActions: {
+  entryTypeRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginTop: 2,
+    gap: 10,
   },
-  actionBtn: { flexDirection: "row", alignItems: "center", gap: 5 },
-  actionLabel: { fontSize: 12, fontWeight: "600", color: colors.gray[400] },
-  actionLabelDanger: {
+  entryIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  entryTypeLabel: {
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  entryDate: { fontSize: 11, color: colors.gray[400], marginTop: 1 },
+  entryAmount: { fontSize: 18, fontWeight: "800" },
+  entryNote: {
     fontSize: 12,
-    fontWeight: "600",
-    color: colors.red[500],
+    color: colors.gray[500],
+    fontStyle: "italic",
+    paddingHorizontal: 2,
   },
-  actionDivider: {
-    width: 1,
-    height: 12,
-    backgroundColor: colors.gray[200],
+  entryFooter: {
+    flexDirection: "row",
+    gap: 16,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.gray[50],
   },
+  entryActionBtn: { flexDirection: "row", alignItems: "center", gap: 5 },
+  entryActionLabel: { fontSize: 12, fontWeight: "600", color: colors.gray[400] },
+  entryActionLabelDanger: { fontSize: 12, fontWeight: "600", color: colors.red[400] },
   dailySection: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -552,6 +617,78 @@ const styles = StyleSheet.create({
   dailyRight: { alignItems: "flex-end", gap: 2 },
   dailySales: { fontSize: 13, fontWeight: "800", color: colors.gray[900] },
   dailyProfit: { fontSize: 11, color: colors.green[600], fontWeight: "600" },
+  // Totals card
+  totalsCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.gray[100],
+    flexDirection: "row",
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  totalItem: { flex: 1, alignItems: "center", gap: 4 },
+  totalItemLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.gray[500],
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  totalItemValue: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: colors.gray[900],
+  },
+  totalItemSub: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: colors.gray[400],
+  },
+  totalDivider: {
+    width: 1,
+    backgroundColor: colors.gray[100],
+    marginVertical: 4,
+  },
+
+  // Daily left col (date + badge)
+  dailyLeft: { gap: 4 },
+  bestBadge: {
+    backgroundColor: colors.indigo[50],
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    alignSelf: "flex-start",
+  },
+  bestBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: colors.indigo[600],
+  },
+
+  avgRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    marginTop: 4,
+    borderTopWidth: 1.5,
+    borderTopColor: colors.gray[200],
+    borderStyle: "dashed",
+  },
+  avgLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.indigo[600],
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  avgSales: { fontSize: 13, fontWeight: "800", color: colors.indigo[600] },
+  avgProfit: { fontSize: 11, color: colors.green[600], fontWeight: "600" },
   tabBar: {
     flexDirection: "row",
     backgroundColor: "#fff",

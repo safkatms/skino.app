@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   RefreshControl,
   StyleSheet,
   ImageBackground,
+  Animated,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,6 +21,104 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { colors } from "@/components/ui/theme";
 import type { PaginatedResponse } from "@/types/api";
 import { WeeklySummary } from "@/components/dashboard/WeeklyTrend";
+
+function SkeletonBox({
+  w,
+  h,
+  r = 8,
+  opacity,
+}: {
+  w: number | string;
+  h: number;
+  r?: number;
+  opacity: Animated.Value;
+}) {
+  return (
+    <Animated.View
+      style={{
+        width: w as any,
+        height: h,
+        borderRadius: r,
+        backgroundColor: colors.gray[200],
+        opacity,
+      }}
+    />
+  );
+}
+
+function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
+  return (
+    <View style={sk.card}>
+      {/* header */}
+      <View style={sk.row}>
+        <SkeletonBox w={34} h={34} r={10} opacity={opacity} />
+        <View style={{ gap: 6, flex: 1 }}>
+          <SkeletonBox w="60%" h={12} opacity={opacity} />
+          <SkeletonBox w="35%" h={9} opacity={opacity} />
+        </View>
+        <SkeletonBox w={56} h={22} r={20} opacity={opacity} />
+      </View>
+      {/* sales row */}
+      <View style={[sk.row, { borderTopWidth: 1, borderTopColor: "#F3F4F6" }]}>
+        <SkeletonBox w={38} h={38} r={12} opacity={opacity} />
+        <View style={{ gap: 5 }}>
+          <SkeletonBox w={50} h={10} opacity={opacity} />
+          <SkeletonBox w={110} h={18} r={6} opacity={opacity} />
+        </View>
+      </View>
+      {/* profit tiles */}
+      <View style={sk.tileRow}>
+        <SkeletonBox w="47%" h={64} r={12} opacity={opacity} />
+        <SkeletonBox w="47%" h={64} r={12} opacity={opacity} />
+      </View>
+      {/* small tiles */}
+      <View style={[sk.tileRow, { paddingBottom: 12 }]}>
+        {[0, 1, 2, 3].map((i) => (
+          <View key={i} style={{ flex: 1, alignItems: "center", gap: 5 }}>
+            <SkeletonBox w={28} h={28} r={8} opacity={opacity} />
+            <SkeletonBox w={36} h={9} opacity={opacity} />
+            <SkeletonBox w={44} h={11} opacity={opacity} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function WeeklySkeleton() {
+  const anim = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0.4,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [anim]);
+
+  return (
+    <ScrollView
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+      scrollEnabled={false}
+    >
+      {/* hero placeholder */}
+      <Animated.View style={[sk.hero, { opacity: anim }]} />
+      {[0, 1, 2, 3].map((i) => (
+        <SkeletonCard key={i} opacity={anim} />
+      ))}
+    </ScrollView>
+  );
+}
 
 const fmt = (v: number) =>
   `৳${v.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
@@ -58,8 +157,10 @@ export default function WeeklyScreen() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const [ready, setReady] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, error, refetch } = useQuery({
     queryKey: ["sales", "summary", "weekly", "paginated", page],
     queryFn: async () => {
       const res = await api.get<PaginatedResponse<WeeklySummary>>(
@@ -69,6 +170,10 @@ export default function WeeklyScreen() {
     },
     placeholderData: (prev) => prev,
   });
+
+  useEffect(() => {
+    if (data) setReady(true);
+  }, [data]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -86,14 +191,15 @@ export default function WeeklyScreen() {
         <Text style={styles.headerTitle}>Weekly Ledger</Text>
       </View>
 
-      {isLoading && !data ? (
-        <Spinner fullScreen />
+      {!ready ? (
+        <WeeklySkeleton />
       ) : error ? (
         <View style={{ padding: 20 }}>
           <Alert message={getApiErrorMessage(error)} />
         </View>
       ) : (
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -347,7 +453,7 @@ export default function WeeklyScreen() {
             <View style={styles.paginationRow}>
               <TouchableOpacity
                 style={styles.pageBtn}
-                onPress={() => setPage((p) => Math.max(1, p - 1))}
+                onPress={() => { setPage((p) => Math.max(1, p - 1)); scrollRef.current?.scrollTo({ y: 0, animated: true }); }}
                 disabled={page === 1}
                 activeOpacity={0.7}
               >
@@ -362,7 +468,7 @@ export default function WeeklyScreen() {
               </Text>
               <TouchableOpacity
                 style={styles.pageBtn}
-                onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onPress={() => { setPage((p) => Math.min(totalPages, p + 1)); scrollRef.current?.scrollTo({ y: 0, animated: true }); }}
                 disabled={page === totalPages}
                 activeOpacity={0.7}
               >
@@ -565,4 +671,34 @@ const styles = StyleSheet.create({
   },
   pageIndicator: { fontSize: 13, color: colors.gray[400] },
   pageNum: { fontWeight: "800", color: colors.gray[900] },
+});
+
+const sk = StyleSheet.create({
+  hero: {
+    height: 130,
+    borderRadius: 20,
+    backgroundColor: colors.gray[200],
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#EEF0F5",
+    borderRadius: 18,
+    overflow: "hidden",
+    gap: 0,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  tileRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
 });
