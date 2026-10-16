@@ -17,6 +17,7 @@ import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { colors } from "@/components/ui/theme";
 import type { PaginatedResponse } from "@/types/api";
+import { SummaryCard } from "@/components/sales/SummaryCard";
 
 interface MonthlySummary {
   month: string;
@@ -26,6 +27,7 @@ interface MonthlySummary {
   returned: number;
   marketing: number;
   netProfit: number;
+  actualProfit: number;
   due: number;
 }
 
@@ -117,99 +119,25 @@ export default function MonthlyScreen() {
           </ImageBackground>
 
           {/* Month cards */}
-          {rows.map((m) => {
-            const cleared = m.due <= 0;
-            const dateLabel = parseMonthLabel(m.month);
-            const accentColor = cleared ? colors.green[500] : colors.red[500];
-
-            const rows2: { label: string; icon: React.ComponentProps<typeof Feather>["name"]; value: string; color: string }[] = [
-              { label: "Sales", icon: "shopping-cart", value: fmt(m.sales), color: colors.gray[900] },
-              { label: "Profit (30%)", icon: "dollar-sign", value: fmt(m.profit), color: colors.indigo[600] },
-              { label: "Net Profit", icon: "trending-up", value: fmt(m.netProfit), color: colors.green[600] },
-              { label: "Collected", icon: "download", value: fmt(m.payments), color: colors.green[600] },
-              { label: "Returned", icon: "rotate-ccw", value: fmt(m.returned), color: colors.orange[500] },
-              { label: "Marketing", icon: "radio", value: fmt(m.marketing), color: "#A855F7" },
-              { label: "Due", icon: "file-text", value: fmt(Math.abs(m.due)), color: m.due > 0 ? colors.red[500] : colors.gray[400] },
-            ];
-
-            return (
-              <View
-                key={m.month}
-                style={[styles.card, { borderLeftColor: accentColor }]}
-              >
-                {/* Card header */}
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardHeaderLeft}>
-                    <Feather name="calendar" size={15} color={accentColor} />
-                    <View>
-                      <Text style={styles.cardDateLabel}>{dateLabel}</Text>
-                      <Text style={styles.cardMonthKey}>{m.month}</Text>
-                    </View>
-                  </View>
-                  <View
-                    style={[
-                      styles.badge,
-                      cleared ? styles.badgeGreen : styles.badgeRed,
-                    ]}
-                  >
-                    <Feather
-                      name={cleared ? "check-circle" : "alert-circle"}
-                      size={11}
-                      color={cleared ? colors.green[600] : colors.red[500]}
-                      style={{ marginRight: 3 }}
-                    />
-                    <Text
-                      style={[
-                        styles.badgeText,
-                        cleared ? styles.badgeTextGreen : styles.badgeTextRed,
-                      ]}
-                    >
-                      {cleared ? "Cleared" : "Due"}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Metric rows */}
-                <View style={styles.metricList}>
-                  {rows2.map((r, i) => (
-                    <View
-                      key={r.label}
-                      style={[
-                        styles.metricRow,
-                        i < rows2.length - 1 && styles.metricRowBorder,
-                        r.label === "Sales" && styles.metricRowSales,
-                      ]}
-                    >
-                      <View style={styles.metricLabelRow}>
-                        <Feather
-                          name={r.icon}
-                          size={r.label === "Sales" ? 14 : 12}
-                          color={r.color}
-                        />
-                        <Text
-                          style={[
-                            styles.metricLabel,
-                            r.label === "Sales" && styles.metricLabelSales,
-                          ]}
-                        >
-                          {r.label}
-                        </Text>
-                      </View>
-                      <Text
-                        style={[
-                          styles.metricValue,
-                          { color: r.color },
-                          r.label === "Sales" && styles.metricValueSales,
-                        ]}
-                      >
-                        {r.value}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            );
-          })}
+          {rows.map((m) => (
+            <SummaryCard
+              key={m.month}
+              dateLabel={parseMonthLabel(m.month)}
+              subLabel={m.month}
+              settled={m.due <= 0}
+              settledLabel="Cleared"
+              metrics={[
+                { label: "Sales", icon: "shopping-cart", value: fmt(m.sales), color: colors.gray[900], hero: true },
+                { label: "Profit (30%)", icon: "dollar-sign", value: fmt(m.profit), color: colors.indigo[600] },
+                { label: "Net Profit", icon: "trending-up", value: fmt(m.netProfit), color: colors.green[600] },
+                { label: "Collected", icon: "download", value: fmt(m.payments), color: colors.green[600] },
+                { label: "Actual Profit", icon: "check-square", value: fmt(m.actualProfit), color: colors.indigo[600] },
+                { label: "Returned", icon: "rotate-ccw", value: fmt(m.returned), color: colors.orange[500] },
+                { label: "Marketing", icon: "radio", value: fmt(m.marketing), color: "#A855F7" },
+                { label: "Due", icon: "file-text", value: fmt(Math.abs(m.due)), color: m.due > 0 ? colors.red[500] : colors.gray[400] },
+              ]}
+            />
+          ))}
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -299,72 +227,6 @@ const styles = StyleSheet.create({
   },
   heroTitle: { fontSize: 20, fontWeight: "800", color: "#fff" },
   heroSub: { fontSize: 12, color: "rgba(255,255,255,0.65)" },
-
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.gray[300],
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  cardHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
-  cardDateLabel: { fontSize: 13, fontWeight: "700", color: colors.gray[900] },
-  cardMonthKey: { fontSize: 10, color: colors.gray[400], marginTop: 1 },
-
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  badgeGreen: {
-    backgroundColor: "#ECFDF5",
-    borderColor: colors.green[200],
-    borderWidth: 1,
-  },
-  badgeRed: {
-    backgroundColor: "#FEF2F2",
-    borderColor: colors.red[200],
-    borderWidth: 1,
-  },
-  badgeText: { fontSize: 11, fontWeight: "700" },
-  badgeTextGreen: { color: colors.green[600] },
-  badgeTextRed: { color: colors.red[500] },
-
-  metricList: { paddingHorizontal: 14, paddingVertical: 4 },
-  metricRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  metricRowBorder: { borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
-  metricRowSales: { paddingVertical: 10 },
-  metricLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  metricLabel: { fontSize: 13, color: colors.gray[500], fontWeight: "500" },
-  metricLabelSales: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.gray[700],
-  },
-  metricValue: { fontSize: 13, fontWeight: "700" },
-  metricValueSales: { fontSize: 16, fontWeight: "800" },
 
   paginationRow: {
     flexDirection: "row",

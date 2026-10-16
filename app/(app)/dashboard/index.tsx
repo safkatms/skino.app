@@ -23,6 +23,7 @@ interface Metrics {
   returned: number;
   marketing: number;
   netProfit: number;
+  actualProfit?: number;
 }
 interface LastWeekMetrics extends Metrics {
   payments: number;
@@ -33,6 +34,7 @@ interface DashboardData {
   currentWeekKey: string;
   lastWeekKey: string;
   today: Metrics;
+  yesterday: Metrics;
   week: Metrics;
   lastWeek: LastWeekMetrics;
   month: Metrics;
@@ -120,6 +122,8 @@ export default function DashboardScreen() {
               currentWeekKey: data?.currentWeekKey ?? "",
               lastWeekSales: data?.lastWeek.sales,
               lastWeekProfit: data?.lastWeek.profit,
+              yesterdaySales: data?.yesterday?.sales,
+              yesterdayProfit: data?.yesterday?.profit,
             }}
           />
 
@@ -130,6 +134,7 @@ export default function DashboardScreen() {
               returned: data?.week.returned ?? 0,
               marketing: data?.week.marketing ?? 0,
               netProfit: data?.week.netProfit ?? 0,
+              actualProfit: data?.week.actualProfit,
               salesChange: weekSalesPct,
               profitChange: weekProfitPct,
             }}
@@ -139,6 +144,7 @@ export default function DashboardScreen() {
               returned: data?.lastWeek.returned ?? 0,
               marketing: data?.lastWeek.marketing ?? 0,
               netProfit: data?.lastWeek.netProfit ?? 0,
+              actualProfit: data?.lastWeek.actualProfit,
               payments: data?.lastWeek.payments,
               due: data?.lastWeek.due,
             }}
@@ -148,6 +154,7 @@ export default function DashboardScreen() {
               returned: data?.month.returned ?? 0,
               marketing: data?.month.marketing ?? 0,
               netProfit: data?.month.netProfit ?? 0,
+              actualProfit: data?.month.actualProfit,
               payments: data?.month.payments,
             }}
             year={{
@@ -156,6 +163,7 @@ export default function DashboardScreen() {
               returned: data?.total.returned ?? 0,
               marketing: data?.total.marketing ?? 0,
               netProfit: data?.total.netProfit ?? 0,
+              actualProfit: data?.total.actualProfit,
               payments: data?.total.payments,
             }}
           />

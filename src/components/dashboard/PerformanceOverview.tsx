@@ -14,6 +14,7 @@ interface PeriodMetrics {
   returned: number;
   marketing: number;
   netProfit: number;
+  actualProfit?: number;
   payments?: number;
   due?: number;
   salesChange?: number | null;
@@ -158,6 +159,14 @@ export function PerformanceOverview({
       icon: "download",
       iconBg: "#ECFDF5",
       iconColor: colors.green[600],
+    });
+    statCards.push({
+      label: "Actual Profit",
+      value: fmt(metrics.actualProfit),
+      color: colors.indigo[600],
+      icon: "check-square",
+      iconBg: "#EFF6FF",
+      iconColor: colors.indigo[600],
     });
   }
 

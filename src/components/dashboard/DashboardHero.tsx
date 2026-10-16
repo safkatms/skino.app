@@ -11,6 +11,8 @@ interface HeroMetrics {
   currentWeekKey: string;
   lastWeekSales?: number;
   lastWeekProfit?: number;
+  yesterdaySales?: number;
+  yesterdayProfit?: number;
 }
 
 const fmt = (v = 0) => `৳${v.toLocaleString("en-US")}`;
@@ -76,6 +78,8 @@ export function DashboardHero({ metrics }: DashboardHeroProps) {
     currentWeekKey,
     lastWeekSales,
     lastWeekProfit,
+    yesterdaySales,
+    yesterdayProfit,
   } = metrics;
 
   const weekSalesPct =
@@ -85,6 +89,14 @@ export function DashboardHero({ metrics }: DashboardHeroProps) {
   const weekProfitPct =
     lastWeekProfit && lastWeekProfit > 0
       ? Math.round(((weekProfit - lastWeekProfit) / lastWeekProfit) * 100)
+      : null;
+  const todaySalesPct =
+    yesterdaySales && yesterdaySales > 0
+      ? Math.round(((todaySales - yesterdaySales) / yesterdaySales) * 100)
+      : null;
+  const todayProfitPct =
+    yesterdayProfit && yesterdayProfit > 0
+      ? Math.round(((todayProfit - yesterdayProfit) / yesterdayProfit) * 100)
       : null;
 
   return (
@@ -127,9 +139,17 @@ export function DashboardHero({ metrics }: DashboardHeroProps) {
 
       <View style={s.dividerH} />
       <View style={s.statsRow}>
-        <StatBlock label="Today Sales" value={fmt(todaySales)} />
+        <StatBlock
+          label="Today Sales"
+          value={fmt(todaySales)}
+          change={todaySalesPct !== null ? { pct: todaySalesPct, vs: "vs yesterday" } : undefined}
+        />
         <View style={s.dividerV} />
-        <StatBlock label="Today Profit" value={fmt(todayProfit)} />
+        <StatBlock
+          label="Today Profit"
+          value={fmt(todayProfit)}
+          change={todayProfitPct !== null ? { pct: todayProfitPct, vs: "vs yesterday" } : undefined}
+        />
       </View>
     </ImageBackground>
   );
