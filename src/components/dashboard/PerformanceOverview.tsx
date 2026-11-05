@@ -6,7 +6,7 @@ import { font, spacing } from "@/components/ui/typography";
 
 const fmt = (v = 0) => `৳${v.toLocaleString("en-US")}`;
 
-type Period = "week" | "lastWeek" | "month" | "year";
+type Period = "week" | "lastWeek" | "month" | "alltime";
 
 interface PeriodMetrics {
   sales: number;
@@ -25,14 +25,14 @@ interface PerformanceOverviewProps {
   week: PeriodMetrics;
   lastWeek: PeriodMetrics;
   month: PeriodMetrics;
-  year?: PeriodMetrics;
+  alltime?: PeriodMetrics;
 }
 
 const PERIODS: { key: Period; label: string }[] = [
   { key: "week", label: "Week" },
   { key: "lastWeek", label: "Last Week" },
   { key: "month", label: "Month" },
-  { key: "year", label: "Year" },
+  { key: "alltime", label: "All Time" },
 ];
 
 interface StatCardProps {
@@ -97,7 +97,7 @@ export function PerformanceOverview({
   week,
   lastWeek,
   month,
-  year,
+  alltime,
 }: PerformanceOverviewProps) {
   const [period, setPeriod] = useState<Period>("week");
 
@@ -108,7 +108,7 @@ export function PerformanceOverview({
         ? lastWeek
         : period === "month"
           ? month
-          : (year ?? month);
+          : (alltime ?? month);
 
   const showPayments = metrics.payments != null;
   const showDue = period === "lastWeek" && metrics.due != null;
@@ -244,7 +244,7 @@ export function PerformanceOverview({
               { color: isDue ? colors.red[500] : colors.green[600] },
             ]}
           >
-            {fmt(metrics.due)}
+            {fmt(Math.abs(metrics.due ?? 0))}
           </Text>
         </View>
       )}

@@ -157,7 +157,7 @@ export default function DashboardScreen() {
               actualProfit: data?.month.actualProfit,
               payments: data?.month.payments,
             }}
-            year={{
+            alltime={{
               sales: data?.total.sales ?? 0,
               profit: data?.total.profit ?? 0,
               returned: data?.total.returned ?? 0,

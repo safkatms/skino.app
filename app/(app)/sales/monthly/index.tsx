@@ -127,14 +127,55 @@ export default function MonthlyScreen() {
               settled={m.due <= 0}
               settledLabel="Cleared"
               metrics={[
-                { label: "Sales", icon: "shopping-cart", value: fmt(m.sales), color: colors.gray[900], hero: true },
-                { label: "Profit (30%)", icon: "dollar-sign", value: fmt(m.profit), color: colors.indigo[600] },
-                { label: "Net Profit", icon: "trending-up", value: fmt(m.netProfit), color: colors.green[600] },
-                { label: "Collected", icon: "download", value: fmt(m.payments), color: colors.green[600] },
-                { label: "Actual Profit", icon: "check-square", value: fmt(m.actualProfit), color: colors.indigo[600] },
-                { label: "Returned", icon: "rotate-ccw", value: fmt(m.returned), color: colors.orange[500] },
-                { label: "Marketing", icon: "radio", value: fmt(m.marketing), color: "#A855F7" },
-                { label: "Due", icon: "file-text", value: fmt(Math.abs(m.due)), color: m.due > 0 ? colors.red[500] : colors.gray[400] },
+                {
+                  label: "Sales",
+                  icon: "shopping-cart",
+                  value: fmt(m.sales),
+                  color: colors.gray[900],
+                  hero: true,
+                },
+                {
+                  label: "Profit (30%)",
+                  icon: "dollar-sign",
+                  value: fmt(m.profit),
+                  color: colors.indigo[600],
+                },
+                {
+                  label: "Net Profit",
+                  icon: "trending-up",
+                  value: fmt(m.netProfit),
+                  color: colors.green[600],
+                },
+                {
+                  label: "Collected",
+                  icon: "download",
+                  value: fmt(m.payments),
+                  color: colors.green[600],
+                },
+                {
+                  label: "Actual Profit",
+                  icon: "check-square",
+                  value: fmt(m.actualProfit),
+                  color: colors.indigo[600],
+                },
+                {
+                  label: "Returned",
+                  icon: "rotate-ccw",
+                  value: fmt(m.returned),
+                  color: colors.orange[500],
+                },
+                {
+                  label: "Marketing",
+                  icon: "radio",
+                  value: fmt(m.marketing),
+                  color: "#A855F7",
+                },
+                {
+                  label: "Due",
+                  icon: "file-text",
+                  value: fmt(Math.abs(m.due)),
+                  color: m.due > 0 ? colors.red[500] : colors.green[500],
+                },
               ]}
             />
           ))}

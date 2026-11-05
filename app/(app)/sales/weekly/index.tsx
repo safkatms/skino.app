@@ -241,17 +241,60 @@ export default function WeeklyScreen() {
               dateLabel={parseWeekLabel(w.weekKey)}
               subLabel={w.weekKey}
               settled={w.due <= 0}
-              settledLabel="Settled"
-              onPress={() => router.push(`/(app)/sales/entries/${w.weekKey}` as any)}
+              settledLabel="Cleared"
+              onPress={() =>
+                router.push(`/(app)/sales/entries/${w.weekKey}` as any)
+              }
               metrics={[
-                { label: "Sales", icon: "shopping-cart", value: fmt(w.sales), color: colors.gray[900], hero: true },
-                { label: "Profit (30%)", icon: "dollar-sign", value: fmt(w.profit), color: colors.indigo[600] },
-                { label: "Net Profit", icon: "trending-up", value: fmt(w.netProfit), color: colors.green[600] },
-                { label: "Collected", icon: "download", value: fmt(w.payments), color: colors.green[600] },
-                { label: "Actual Profit", icon: "check-square", value: fmt(w.actualProfit), color: colors.indigo[600] },
-                { label: "Returned", icon: "rotate-ccw", value: fmt(w.returned), color: colors.orange[500] },
-                { label: "Marketing", icon: "radio", value: fmt(w.marketing), color: "#A855F7" },
-                { label: "Due", icon: "file-text", value: fmt(Math.abs(w.due)), color: w.due > 0 ? colors.red[500] : colors.gray[400] },
+                {
+                  label: "Sales",
+                  icon: "shopping-cart",
+                  value: fmt(w.sales),
+                  color: colors.gray[900],
+                  hero: true,
+                },
+                {
+                  label: "Profit (30%)",
+                  icon: "dollar-sign",
+                  value: fmt(w.profit),
+                  color: colors.indigo[600],
+                },
+                {
+                  label: "Net Profit",
+                  icon: "trending-up",
+                  value: fmt(w.netProfit),
+                  color: colors.green[600],
+                },
+                {
+                  label: "Collected",
+                  icon: "download",
+                  value: fmt(w.payments),
+                  color: colors.green[600],
+                },
+                {
+                  label: "Actual Profit",
+                  icon: "check-square",
+                  value: fmt(w.actualProfit),
+                  color: colors.indigo[600],
+                },
+                {
+                  label: "Returned",
+                  icon: "rotate-ccw",
+                  value: fmt(w.returned),
+                  color: colors.orange[500],
+                },
+                {
+                  label: "Marketing",
+                  icon: "radio",
+                  value: fmt(w.marketing),
+                  color: "#A855F7",
+                },
+                {
+                  label: "Due",
+                  icon: "file-text",
+                  value: fmt(Math.abs(w.due)),
+                  color: w.due > 0 ? colors.red[500] : colors.green[500],
+                },
               ]}
             />
           ))}
